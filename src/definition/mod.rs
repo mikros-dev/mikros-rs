@@ -1,14 +1,15 @@
 mod validation;
 
+use std::sync::Arc;
 use validator::{ValidateArgs};
-use crate::errors::{Result, Error};
-use validation::validate_service_info;
+
+use crate::errors as merrors;
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
 #[derive(serde_derive::Deserialize, validator::Validate)]
 #[validate(context = CustomServiceInfo)]
-#[validate(schema(function = "validate_service_info", skip_on_field_errors = false, use_context))]
+#[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
 pub(crate) struct ServiceDefinitions {
     pub name: String,
     pub types: Vec<String>,
@@ -38,10 +39,10 @@ pub(crate) struct CustomServiceInfo {
 }
 
 impl ServiceDefinitions {
-    pub fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> Result<Self> {
+    pub fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> merrors::Result<Arc<Self>> {
         let info: ServiceDefinitions = match toml::from_str(&Self::load_service_file(filename)?) {
             Ok(content) => content,
-            Err(e) => return Err(Error::InvalidSettings(e.to_string())),
+            Err(e) => return Err(merrors::Error::InvalidDefinitions(e.to_string())),
         };
 
         let context = custom_info.unwrap_or_else(|| {
@@ -49,24 +50,23 @@ impl ServiceDefinitions {
             c
         });
 
-        // Then validate the final service definitions
         if let Err(e) = info.validate_with_args(&context) {
-            return Err(Error::InvalidSettings(e.to_string()));
+            return Err(merrors::Error::InvalidDefinitions(e.to_string()));
         }
 
-        Ok(info)
+        Ok(Arc::new(info))
     }
 
-    fn load_service_file(filename: Option<&str>) -> Result<String> {
+    fn load_service_file(filename: Option<&str>) -> merrors::Result<String> {
         let path = Self::get_service_file_path(filename)?;
 
         match std::fs::read_to_string(path.as_path()) {
             Ok(content) => Ok(content),
-            Err(e) => Err(Error::InvalidSettings(e.to_string())),
+            Err(e) => Err(merrors::Error::InvalidDefinitions(e.to_string())),
         }
     }
 
-    fn get_service_file_path(filename: Option<&str>) -> Result<std::path::PathBuf> {
+    fn get_service_file_path(filename: Option<&str>) -> merrors::Result<std::path::PathBuf> {
         if let Some(filename) = filename {
             return Ok(std::path::Path::new(filename).to_path_buf())
         }
@@ -76,7 +76,7 @@ impl ServiceDefinitions {
                 p.push("service.toml");
                 Ok(p)
             }
-            Err(r) => Err(Error::InvalidSettings(r.to_string())),
+            Err(r) => Err(merrors::Error::InvalidDefinitions(r.to_string())),
         }
     }
 }
@@ -113,15 +113,20 @@ mod tests {
         assert_eq!(defs.unwrap().types.len(), 1);
     }
 
+    // FIXME
     #[test]
     fn test_load_service_file_ok_hybrid() {
         let filename = assets_path().join("definitions/service.toml.ok_hybrid");
         let defs = ServiceDefinitions::new(filename.to_str(), None);
         assert!(defs.is_ok());
 
-        let info = defs.unwrap();
-        assert_eq!(info.types.len(), 2);
-        assert_eq!(info.envs.unwrap().len(), 2);
+        match defs {
+            Ok(info ) => {
+                assert_eq!(info.types.len(), 2);
+                assert_eq!(info.envs.unwrap().len(), 2);
+            }
+            Err(_) => assert!(false),
+        }
     }
 
     #[test]
@@ -134,5 +139,6 @@ mod tests {
         let defs = ServiceDefinitions::new(filename.to_str(), Some(custom_info));
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
+
     }
 }

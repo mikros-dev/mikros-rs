@@ -3,13 +3,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    InvalidSettings(String)
+    InvalidDefinitions(String),
+    EnvironmentVariableFailure(String),
+    UnsupportedServiceType,
+    EmptyServiceFound,
+    FeatureNotFound(String),
 }
 
 impl Error {
     fn description(&self) -> String {
         match self {
-            Error::InvalidSettings(s) => format!("invalid settings: {}", s),
+            Error::InvalidDefinitions(s) => format!("invalid service definitions: {}", s),
+            Error::EnvironmentVariableFailure(s) => format!("environment variable failure: {}", s),
+            Error::UnsupportedServiceType => "unsupported service type".to_string(),
+            Error::EmptyServiceFound => "cannot execute without a service implementation".to_string(),
+            Error::FeatureNotFound(s) => format!("feature {} not found", s),
         }
     }
 }

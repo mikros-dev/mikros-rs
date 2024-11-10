@@ -1,9 +1,13 @@
 [package]
-name = "mikros-rs"
+name = "mikros"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+env-settings = "0.1.11"
+env-settings-derive = "0.1.11"
+env-settings-utils = "0.1.11"
+logger = { git = "https://github.com/rsfreitas/logger" }
 serde = "1.0.214"
 serde_derive = "1.0.214"
 toml = "0.8.19"
