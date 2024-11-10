@@ -79,6 +79,10 @@ impl ServiceDefinitions {
             Err(r) => Err(merrors::Error::InvalidDefinitions(r.to_string())),
         }
     }
+
+    pub(crate) fn is_service_configured(&self, service_type: &str) -> bool {
+        self.types.iter().any(|t| t == service_type)
+    }
 }
 
 #[cfg(test)]

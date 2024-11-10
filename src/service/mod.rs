@@ -64,7 +64,9 @@ impl Service {
 
         // execute service main tasks (in background)
         for s in self.servers.iter_mut() {
-            s.run(&self.context)?;
+            if self.definitions.is_service_configured(s.name()) {
+                s.run(&self.context)?;
+            }
         }
 
         // keep running until ctrl+c
@@ -77,7 +79,9 @@ impl Service {
 impl Drop for Service {
     fn drop(&mut self) {
         for s in &mut self.servers {
-            s.stop(&self.context);
+            if self.definitions.is_service_configured(s.name()) {
+                s.stop(&self.context);
+            }
         }
 
         self.logger.info("service stopped");
