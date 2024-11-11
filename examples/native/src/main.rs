@@ -8,8 +8,9 @@ use mikros::service::builder::{ServiceBuilder};
 use mikros::service::script::ScriptService;
 use service::Service as AppService;
 
-fn main() {
-    let s = Arc::new(Mutex::new(AppService::default()));
+#[tokio::main]
+async fn main() {
+    let s = Arc::new(Mutex::new(AppService::new()));
     let svc = ServiceBuilder::default()
         .as_native(s.clone())
         .as_script(s)
@@ -17,7 +18,7 @@ fn main() {
 
     match svc {
         Ok(mut svc) => {
-            let _ = svc.start();
+            let _ = svc.start().await;
         },
         Err(e) => panic!("{}", e.to_string())
     }

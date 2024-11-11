@@ -1,5 +1,6 @@
 
-pub trait Feature: FeatureClone + std::any::Any {
+#[async_trait::async_trait]
+pub trait Feature: Send + FeatureClone + std::any::Any {
     /// The feature name.
     fn name(&self) -> &str;
 

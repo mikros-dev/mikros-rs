@@ -32,6 +32,11 @@ impl ServiceBuilder {
         self
     }
 
+    /// Sets the current service as an external type.
+    // pub fn as_external_service<S: plugin::service::Service + 'static>(&mut self, svc: Arc<Mutex<S>>) -> &mut Self {
+    //     self
+    // }
+
     /// Adds external features into the current service environment.
     pub fn with_features(&mut self, features: Vec<Box<dyn plugin::feature::Feature>>) -> &mut Self {
         self.features.extend(features);

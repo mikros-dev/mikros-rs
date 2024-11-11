@@ -2,5 +2,5 @@ name = "native-example"
 version = "v0.1.0"
 language = "rust"
 product = "examples"
-types = ["native"]
+types = ["native", "script"]
 envs = [ "CUSTOM_ENV" ]

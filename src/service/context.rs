@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::definition::ServiceDefinitions;
 use crate::env::Env;
@@ -7,11 +7,13 @@ use crate::service::builder::ServiceBuilder;
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.
+#[derive(Clone)]
 pub struct Context {
     logger: Arc<logger::Logger>,
     envs: Arc<Env>,
     definitions: Arc<ServiceDefinitions>,
-    features: Vec<Box<dyn plugin::feature::Feature>>,
+
+    pub(crate) features: Arc<Mutex<Vec<Box<dyn plugin::feature::Feature>>>>
 }
 
 impl Context {
@@ -25,7 +27,7 @@ impl Context {
             logger,
             envs: Env::load(&definitions)?,
             definitions,
-            features,
+            features: Arc::new(Mutex::new(features)),
         })
     }
 
@@ -44,10 +46,5 @@ impl Context {
     /// Returns the current service name.
     pub fn service_name(&self) -> String {
         self.definitions.name.clone()
-    }
-
-    /// Returns a previously loaded feature to be used by services.
-    pub(crate) fn feature(&self, name: &str) -> Option<&Box<dyn plugin::feature::Feature>> {
-        self.features.iter().find(|f| f.name() == name)
     }
 }

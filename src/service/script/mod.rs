@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::{errors as merrors, plugin};
 use crate::service::context::Context;
 
-pub trait ScriptService: ScriptServiceClone {
+pub trait ScriptService: Send + ScriptServiceClone {
     fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
     fn cleanup(&mut self, ctx: &Context);
 }
@@ -40,6 +40,7 @@ impl Script {
     }
 }
 
+#[async_trait::async_trait]
 impl plugin::service::Service for Script {
     fn name(&self) -> &str {
         "script"
@@ -49,7 +50,7 @@ impl plugin::service::Service for Script {
         Ok(())
     }
 
-    fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
         self.svc.lock().unwrap().run(ctx)
     }
 

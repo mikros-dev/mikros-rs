@@ -9,13 +9,20 @@ pub trait ExampleAPI {
     fn do_something(&self);
 }
 
-/// Retrieves the feature API to be used inside a service.
-pub fn retrieve(ctx: &Context) -> merrors::Result<Option<&dyn ExampleAPI>> {
+/// Retrieves the feature API to be used inside a service and, if found, calls
+/// a closure over with.
+pub fn retrieve(ctx: &Context, f: impl FnOnce(&dyn ExampleAPI)) -> merrors::Result<()> {
     let name = "example";
 
-    match ctx.feature(name) {
-        Some(f) => Ok(retrieve_example_api(f)),
+    match ctx.features.lock().unwrap().iter().find(|f| f.name() == name) {
         None => Err(merrors::Error::FeatureNotFound(name.to_string())),
+        Some(feature) => {
+            if let Some(api) = retrieve_example_api(feature) {
+                f(api);
+            }
+
+            Ok(())
+        }
     }
 }
 

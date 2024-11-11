@@ -4,8 +4,16 @@ use std::sync::{Arc, Mutex};
 use crate::{errors as merrors, plugin};
 use crate::service::context::Context;
 
-pub trait NativeService: NativeServiceClone {
+#[async_trait::async_trait]
+pub trait NativeService: Send + NativeServiceClone {
+    /// This is the place where the service/application must be initialized. It
+    /// should do the required initialization, put any job to execute in background
+    /// and leave. It shouldn't block.
     fn start(&mut self, ctx: &Context) -> merrors::Result<()>;
+
+    /// The stop callback is called when the service/application is requested
+    /// to finish. It must be responsible for finishing any previously started
+    /// job.
     fn stop(&mut self, ctx: &Context);
 }
 
@@ -41,6 +49,7 @@ impl Native {
     }
 }
 
+#[async_trait::async_trait]
 impl plugin::service::Service for Native {
     fn name(&self) -> &str {
         "native"
@@ -50,7 +59,7 @@ impl plugin::service::Service for Native {
         Ok(())
     }
 
-    fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
         self.svc.lock().unwrap().start(ctx)
     }
 
