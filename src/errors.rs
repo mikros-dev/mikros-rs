@@ -9,6 +9,7 @@ pub enum Error {
     EmptyServiceFound,
     FeatureNotFound(String),
     InternalServiceError(String),
+    UnsupportedServicesCombination,
 }
 
 impl Error {
@@ -20,6 +21,7 @@ impl Error {
             Error::EmptyServiceFound => "cannot execute without a service implementation".to_string(),
             Error::FeatureNotFound(s) => format!("feature {} not found", s),
             Error::InternalServiceError(s) => format!("internal service error: {}", s),
+            Error::UnsupportedServicesCombination => "unsupported services combination".to_string(),
         }
     }
 }

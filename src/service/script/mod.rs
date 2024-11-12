@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use logger::fields::FieldValue;
 
 use crate::{errors as merrors, plugin};
 use crate::service::context::Context;
@@ -56,5 +58,11 @@ impl plugin::service::Service for Script {
 
     fn stop(&mut self, ctx: &Context) {
         self.svc.lock().unwrap().cleanup(ctx)
+    }
+
+    fn information(&self) -> HashMap<String, FieldValue> {
+        logger::fields![
+            "kind".to_string() => FieldValue::String(self.name().to_string()),
+        ]
     }
 }

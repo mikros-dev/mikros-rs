@@ -65,15 +65,13 @@ impl Service {
 
     /// Puts the service to run.
     pub async fn start(&mut self) -> merrors::Result<()> {
-        if self.servers.is_empty() {
-            return Err(merrors::Error::EmptyServiceFound)
-        }
-
+        self.start_service_validations()?;
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
-        self.logger.info("service starting");
 
         // execute service main task
         for s in self.servers.iter_mut() {
+            self.logger.infof("service starting", s.information());
+
             if self.definitions.is_service_configured(s.name()) {
                 let mut service = s.clone();
                 let context = self.context.clone();
@@ -126,9 +124,25 @@ impl Service {
         Ok(())
     }
 
-    async fn wait_finishing_signal(&mut self) {
+    fn start_service_validations(&mut self) -> merrors::Result<()> {
+        if self.servers.is_empty() {
+            return Err(merrors::Error::EmptyServiceFound)
+        }
+
+        // Script services should be a single service.
+        let service_types = self.definitions.service_types();
+        if self.definitions.is_script_service() && service_types.len() > 1 {
+            return Err(merrors::Error::UnsupportedServicesCombination)
+        }
+
+        Ok(())
+    }
+
+    async fn wait_finishing_signal(&self) {
         // Wait for a signal to finish the service.
-        signal::ctrl_c().await.expect("failed to listen for ctrl-c");
+        if !self.definitions.is_script_service() {
+            signal::ctrl_c().await.expect("failed to listen for ctrl-c");
+        }
     }
 
     async fn stop_service_tasks(&mut self) {
@@ -146,11 +160,7 @@ impl Service {
         for handle in &mut self.handles {
             let _ = handle.await;
         }
-    }
-}
 
-impl Drop for Service {
-    fn drop(&mut self) {
         self.logger.info("service stopped");
     }
 }

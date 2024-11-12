@@ -3,19 +3,11 @@ use mikros::service::context::Context;
 use mikros::features;
 
 #[derive(Clone)]
-pub struct Service {
-//    tx: Option<std::sync::mpsc::Sender<()>>,
-//    rx: Option<std::sync::mpsc::Receiver<()>>
-}
+pub struct Service;
 
 impl Service {
     pub fn new() -> Self {
-//        let (tx, rx) = std::sync::mpsc::channel();
-
-        Self {
-//            tx: None,
-//            rx: None,
-        }
+        Self {}
     }
 }
 
@@ -31,7 +23,7 @@ impl mikros::service::native::NativeService for Service {
             api.do_something();
         })?;
 
-        ctx.logger().info("finished loop");
+        ctx.logger().info("finished start native service method");
         Ok(())
     }
 

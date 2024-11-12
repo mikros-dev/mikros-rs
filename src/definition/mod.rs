@@ -1,6 +1,7 @@
 mod validation;
 
 use std::sync::Arc;
+use std::str::FromStr;
 use validator::{ValidateArgs};
 
 use crate::errors as merrors;
@@ -12,12 +13,13 @@ use crate::errors as merrors;
 #[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
 pub(crate) struct ServiceDefinitions {
     pub name: String,
-    pub types: Vec<String>,
     pub version: String,
     pub language: String,
     pub product: String,
     pub envs: Option<Vec<String>>,
     pub log: Option<Log>,
+
+    types: Vec<String>,
 }
 
 #[derive(serde_derive::Deserialize)]
@@ -31,6 +33,20 @@ pub(crate) enum ServiceKind {
     Http,
     Script,
     Native,
+}
+
+impl FromStr for ServiceKind {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "grpc" => Ok(ServiceKind::Grpc),
+            "http" => Ok(ServiceKind::Http),
+            "native" => Ok(ServiceKind::Native),
+            "script" => Ok(ServiceKind::Script),
+            _ => Err(())
+        }
+    }
 }
 
 #[derive(Default)]
@@ -83,6 +99,19 @@ impl ServiceDefinitions {
     pub(crate) fn is_service_configured(&self, service_type: &str) -> bool {
         self.types.iter().any(|t| t == service_type)
     }
+
+    pub fn service_types(&self) -> Vec<ServiceKind> {
+        let mut types: Vec<ServiceKind> = Vec::new();
+        for t in self.types.iter() {
+            types.push(ServiceKind::from_str(t).unwrap());
+        }
+
+        types
+    }
+
+    pub(crate) fn is_script_service(&self) -> bool {
+        self.types.iter().any(|t| t.as_str() == "script")
+    }
 }
 
 #[cfg(test)]
@@ -127,7 +156,7 @@ mod tests {
         match defs {
             Ok(info ) => {
                 assert_eq!(info.types.len(), 2);
-                assert_eq!(info.envs.unwrap().len(), 2);
+                assert_eq!(info.envs.clone().unwrap().len(), 2);
             }
             Err(_) => assert!(false),
         }

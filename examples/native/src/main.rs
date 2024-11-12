@@ -18,7 +18,9 @@ async fn main() {
 
     match svc {
         Ok(mut svc) => {
-            let _ = svc.start().await;
+            if let Err(e) = svc.start().await {
+                println!("application error: {}", e);
+            }
         },
         Err(e) => panic!("{}", e.to_string())
     }

@@ -13,9 +13,6 @@ pub(crate) struct Env {
     #[env_settings(variable = "MIKROS_TRACKER_HEADER_NAME", default = "X-Request-ID")]
     pub tracker_header_name: String,
 
-    #[env_settings(variable = "MIKROS_CICD_TEST", default = "false")]
-    pub is_cicd: bool,
-
     #[env_settings(variable = "MIKROS_COUPLED_NAMESPACE")]
     pub coupled_namespace: String,
 

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 
 use crate::{errors as merrors};
 use crate::service::context::Context;
@@ -8,6 +9,7 @@ pub trait Service: Send + ServiceClone {
     fn initialize(&mut self) -> merrors::Result<()>;
     async fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
     fn stop(&mut self, ctx: &Context);
+    fn information(&self) -> HashMap<String, logger::fields::FieldValue>;
 }
 
 pub trait ServiceClone {
