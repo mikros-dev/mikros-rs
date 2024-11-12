@@ -11,14 +11,14 @@ use crate::errors as merrors;
 #[derive(serde_derive::Deserialize, validator::Validate)]
 #[validate(context = CustomServiceInfo)]
 #[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
-pub(crate) struct ServiceDefinitions {
+pub(crate) struct Definitions {
     pub name: String,
     pub version: String,
     pub language: String,
     pub product: String,
     pub envs: Option<Vec<String>>,
     pub log: Option<Log>,
-
+//    pub types2: Vec<Service>,
     types: Vec<String>,
 }
 
@@ -27,12 +27,15 @@ pub(crate) struct Log {
     pub level: String
 }
 
-#[derive(serde_derive::Deserialize, PartialEq)]
+pub(crate) struct Service(ServiceKind, i32);
+
+#[derive(serde_derive::Deserialize)]
 pub(crate) enum ServiceKind {
     Grpc,
     Http,
     Script,
     Native,
+    Custom(String),
 }
 
 impl FromStr for ServiceKind {
@@ -44,7 +47,7 @@ impl FromStr for ServiceKind {
             "http" => Ok(ServiceKind::Http),
             "native" => Ok(ServiceKind::Native),
             "script" => Ok(ServiceKind::Script),
-            _ => Err(())
+            _ => Ok(ServiceKind::Custom(s.to_string())),
         }
     }
 }
@@ -54,9 +57,9 @@ pub(crate) struct CustomServiceInfo {
     pub types: Option<Vec<String>>,
 }
 
-impl ServiceDefinitions {
+impl Definitions {
     pub fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> merrors::Result<Arc<Self>> {
-        let info: ServiceDefinitions = match toml::from_str(&Self::load_service_file(filename)?) {
+        let info: Definitions = match toml::from_str(&Self::load_service_file(filename)?) {
             Ok(content) => content,
             Err(e) => return Err(merrors::Error::InvalidDefinitions(e.to_string())),
         };
@@ -127,21 +130,21 @@ mod tests {
     #[test]
     fn test_load_service_file_with_invalid_settings() {
         let filename = assets_path().join("definitions/service.toml.err_unsupported_type");
-        let defs = ServiceDefinitions::new(filename.to_str(), None);
+        let defs = Definitions::new(filename.to_str(), None);
         assert!(defs.is_err());
     }
 
     #[test]
     fn test_load_service_file_with_invalid_toml() {
         let filename = assets_path().join("definitions/service.toml.err_invalid_toml");
-        let defs = ServiceDefinitions::new(filename.to_str(), None);
+        let defs = Definitions::new(filename.to_str(), None);
         assert!(defs.is_err());
     }
 
     #[test]
     fn test_load_service_file_ok() {
         let filename = assets_path().join("definitions/service.toml.ok");
-        let defs = ServiceDefinitions::new(filename.to_str(), None);
+        let defs = Definitions::new(filename.to_str(), None);
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
     }
@@ -150,7 +153,7 @@ mod tests {
     #[test]
     fn test_load_service_file_ok_hybrid() {
         let filename = assets_path().join("definitions/service.toml.ok_hybrid");
-        let defs = ServiceDefinitions::new(filename.to_str(), None);
+        let defs = Definitions::new(filename.to_str(), None);
         assert!(defs.is_ok());
 
         match defs {
@@ -169,7 +172,7 @@ mod tests {
         };
 
         let filename = assets_path().join("definitions/service.toml.err_unsupported_type");
-        let defs = ServiceDefinitions::new(filename.to_str(), Some(custom_info));
+        let defs = Definitions::new(filename.to_str(), Some(custom_info));
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
 

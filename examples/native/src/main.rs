@@ -13,7 +13,6 @@ async fn main() {
     let s = Arc::new(Mutex::new(AppService::new()));
     let svc = ServiceBuilder::default()
         .as_native(s.clone())
-        .as_script(s)
         .build();
 
     match svc {

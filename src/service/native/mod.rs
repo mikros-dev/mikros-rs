@@ -64,7 +64,7 @@ impl plugin::service::Service for Native {
         self.svc.lock().unwrap().start(ctx)
     }
 
-    fn stop(&mut self, ctx: &Context) {
+    async fn stop(&mut self, ctx: &Context) {
         self.svc.lock().unwrap().stop(ctx)
     }
 

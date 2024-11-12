@@ -7,9 +7,10 @@ use crate::service::context::Context;
 pub trait Service: Send + ServiceClone {
     fn name(&self) -> &str;
     fn initialize(&mut self) -> merrors::Result<()>;
-    async fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
-    fn stop(&mut self, ctx: &Context);
     fn information(&self) -> HashMap<String, logger::fields::FieldValue>;
+
+    async fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
+    async fn stop(&mut self, ctx: &Context);
 }
 
 pub trait ServiceClone {

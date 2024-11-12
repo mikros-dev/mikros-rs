@@ -1,5 +1,6 @@
 pub mod builder;
 pub mod context;
+pub mod grpc;
 pub mod native;
 pub mod script;
 
@@ -10,12 +11,12 @@ use tokio::sync::watch;
 use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
-use crate::definition::ServiceDefinitions;
+use crate::definition::Definitions;
 use crate::{errors as merrors, plugin};
 use crate::service::builder::ServiceBuilder;
 
 pub struct Service {
-    definitions: std::sync::Arc<ServiceDefinitions>,
+    definitions: std::sync::Arc<Definitions>,
     logger: std::sync::Arc<logger::Logger>,
     servers: Vec<Box<dyn plugin::service::Service>>,
     context: context::Context,
@@ -39,14 +40,14 @@ impl Service {
         })
     }
 
-    fn load_definitions(_builder: &ServiceBuilder) -> merrors::Result<std::sync::Arc<ServiceDefinitions>> {
+    fn load_definitions(_builder: &ServiceBuilder) -> merrors::Result<std::sync::Arc<Definitions>> {
         let args = Args::load();
 
         // FIXME: set custom_info from features
-        ServiceDefinitions::new(args.config_path.as_deref(), None)
+        Definitions::new(args.config_path.as_deref(), None)
     }
 
-    fn start_logger(defs: &ServiceDefinitions) -> std::sync::Arc<logger::Logger> {
+    fn start_logger(defs: &Definitions) -> std::sync::Arc<logger::Logger> {
         std::sync::Arc::new(logger::builder::LoggerBuilder::default()
             .with_field("svc.name", logger::fields::FieldValue::String(defs.name.clone()))
             .with_field("svc.version", logger::fields::FieldValue::String(defs.version.clone()))
@@ -57,7 +58,7 @@ impl Service {
 
     fn build_context(
         logger: std::sync::Arc<logger::Logger>,
-        defs: std::sync::Arc<ServiceDefinitions>,
+        defs: std::sync::Arc<Definitions>,
         builder: &ServiceBuilder,
     ) -> merrors::Result<context::Context> {
         context::Context::new(logger.clone(), defs, builder)
@@ -149,7 +150,7 @@ impl Service {
         // Call service stop callback so the service can stop itself
         for s in &mut self.servers {
             if self.definitions.is_service_configured(s.name()) {
-                s.stop(&self.context);
+                s.stop(&self.context).await;
             }
         }
 

@@ -1,7 +1,7 @@
 
-use crate::definition::{ServiceDefinitions, CustomServiceInfo};
+use crate::definition::{Definitions, CustomServiceInfo};
 
-pub(crate) fn validate_service_info(info: &ServiceDefinitions, context: &CustomServiceInfo) -> Result<(), validator::ValidationError> {
+pub(crate) fn validate_service_info(info: &Definitions, context: &CustomServiceInfo) -> Result<(), validator::ValidationError> {
     validate_service_types(&info.types, context)?;
     Ok(())
 }

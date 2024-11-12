@@ -56,7 +56,7 @@ impl plugin::service::Service for Script {
         self.svc.lock().unwrap().run(ctx)
     }
 
-    fn stop(&mut self, ctx: &Context) {
+    async fn stop(&mut self, ctx: &Context) {
         self.svc.lock().unwrap().cleanup(ctx)
     }
 

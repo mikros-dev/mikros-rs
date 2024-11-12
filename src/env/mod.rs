@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use env_settings_derive::EnvSettings;
 
-use crate::definition::ServiceDefinitions;
+use crate::definition::Definitions;
 use crate::errors as merrors;
 
 #[derive(EnvSettings)]
@@ -30,7 +30,7 @@ pub(crate) struct Env {
 }
 
 impl Env {
-    pub fn load(defs: &ServiceDefinitions) -> merrors::Result<Arc<Self>> {
+    pub fn load(defs: &Definitions) -> merrors::Result<Arc<Self>> {
         let e = Env::from_env(std::collections::HashMap::new());
         match e {
             Ok(mut env) => {
@@ -41,7 +41,7 @@ impl Env {
         }
     }
 
-    fn load_defined_envs(&self, defs: &ServiceDefinitions) -> merrors::Result<std::collections::HashMap<String, String>> {
+    fn load_defined_envs(&self, defs: &Definitions) -> merrors::Result<std::collections::HashMap<String, String>> {
         let mut envs = std::collections::HashMap::new();
 
         if let Some(defined_envs) = &defs.envs {
@@ -64,7 +64,7 @@ impl Env {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::definition::ServiceDefinitions;
+    use crate::definition::Definitions;
 
     fn assets_path() -> std::path::PathBuf {
         let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -76,7 +76,7 @@ mod tests {
     fn test_load_env() {
         std::env::set_var("MIKROS_COUPLED_NAMESPACE", "localhost".to_string());
         let filename = assets_path().join("definitions/service.toml.ok");
-        let defs = ServiceDefinitions::new(filename.to_str(), None).unwrap();
+        let defs = Definitions::new(filename.to_str(), None).unwrap();
         let e = Env::load(&defs).unwrap();
         println!("{:?}", e);
     }
