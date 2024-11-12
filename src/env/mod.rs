@@ -4,7 +4,7 @@ use env_settings_derive::EnvSettings;
 use crate::definition::Definitions;
 use crate::errors as merrors;
 
-#[derive(EnvSettings)]
+#[derive(EnvSettings, Debug)]
 #[env_settings(delay)]
 pub(crate) struct Env {
     #[env_settings(variable = "MIKROS_SERVICE_DEPLOY", default = "local")]

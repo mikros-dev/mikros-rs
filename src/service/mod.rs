@@ -131,8 +131,7 @@ impl Service {
         }
 
         // Script services should be a single service.
-        let service_types = self.definitions.service_types();
-        if self.definitions.is_script_service() && service_types.len() > 1 {
+        if self.definitions.is_script_service() && self.definitions.types.len() > 1 {
             return Err(merrors::Error::UnsupportedServicesCombination)
         }
 

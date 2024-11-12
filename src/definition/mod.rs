@@ -1,5 +1,7 @@
 mod validation;
+mod service;
 
+use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::str::FromStr;
 use validator::{ValidateArgs};
@@ -18,8 +20,9 @@ pub(crate) struct Definitions {
     pub product: String,
     pub envs: Option<Vec<String>>,
     pub log: Option<Log>,
-//    pub types2: Vec<Service>,
-    types: Vec<String>,
+
+    #[serde(deserialize_with = "service::deserialize_services")]
+    pub types: Vec<service::Service>,
 }
 
 #[derive(serde_derive::Deserialize)]
@@ -27,9 +30,7 @@ pub(crate) struct Log {
     pub level: String
 }
 
-pub(crate) struct Service(ServiceKind, i32);
-
-#[derive(serde_derive::Deserialize)]
+#[derive(serde_derive::Deserialize, Clone, Debug)]
 pub(crate) enum ServiceKind {
     Grpc,
     Http,
@@ -48,6 +49,18 @@ impl FromStr for ServiceKind {
             "native" => Ok(ServiceKind::Native),
             "script" => Ok(ServiceKind::Script),
             _ => Ok(ServiceKind::Custom(s.to_string())),
+        }
+    }
+}
+
+impl Display for ServiceKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ServiceKind::Grpc => write!(f, "grpc"),
+            ServiceKind::Http => write!(f, "http"),
+            ServiceKind::Native => write!(f, "native"),
+            ServiceKind::Script => write!(f, "script"),
+            ServiceKind::Custom(s) => write!(f, "{}", s),
         }
     }
 }
@@ -100,20 +113,17 @@ impl Definitions {
     }
 
     pub(crate) fn is_service_configured(&self, service_type: &str) -> bool {
-        self.types.iter().any(|t| t == service_type)
-    }
-
-    pub fn service_types(&self) -> Vec<ServiceKind> {
-        let mut types: Vec<ServiceKind> = Vec::new();
-        for t in self.types.iter() {
-            types.push(ServiceKind::from_str(t).unwrap());
-        }
-
-        types
+        self.types.iter().any(|t| {
+            let service::Service(kind, _) = t;
+            kind.to_string() == service_type
+        })
     }
 
     pub(crate) fn is_script_service(&self) -> bool {
-        self.types.iter().any(|t| t.as_str() == "script")
+        self.types.iter().any(|t| {
+            let service::Service(kind, _) = t;
+            kind.to_string() == "script"
+        })
     }
 }
 
@@ -149,7 +159,6 @@ mod tests {
         assert_eq!(defs.unwrap().types.len(), 1);
     }
 
-    // FIXME
     #[test]
     fn test_load_service_file_ok_hybrid() {
         let filename = assets_path().join("definitions/service.toml.ok_hybrid");
@@ -176,5 +185,17 @@ mod tests {
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
 
+    }
+
+    #[test]
+    fn test_is_service_configured() {
+        let filename = assets_path().join("definitions/service.toml.ok_hybrid");
+        let defs = Definitions::new(filename.to_str(), None);
+        assert!(defs.is_ok());
+
+        let d = defs.unwrap();
+        assert_eq!(d.is_service_configured("grpc"), true);
+        assert_eq!(d.is_service_configured("http"), true);
+        assert_eq!(d.is_service_configured("websocket"), false);
     }
 }
