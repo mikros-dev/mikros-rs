@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{errors as merrors};
+use crate::{definition, errors as merrors};
 use crate::service::context::Context;
 
 #[async_trait::async_trait]
 pub trait Service: Send + ServiceClone {
-    fn name(&self) -> &str;
+    fn kind(&self) -> definition::ServiceKind;
     fn initialize(&mut self) -> merrors::Result<()>;
     fn information(&self) -> HashMap<String, logger::fields::FieldValue>;
 

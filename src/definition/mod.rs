@@ -1,6 +1,7 @@
 mod validation;
 mod service;
 
+use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::str::FromStr;
@@ -30,8 +31,8 @@ pub(crate) struct Log {
     pub level: String
 }
 
-#[derive(serde_derive::Deserialize, Clone, Debug)]
-pub(crate) enum ServiceKind {
+#[derive(serde_derive::Deserialize, Clone, Debug, PartialEq)]
+pub enum ServiceKind {
     Grpc,
     Http,
     Script,
@@ -112,10 +113,10 @@ impl Definitions {
         }
     }
 
-    pub(crate) fn is_service_configured(&self, service_type: &str) -> bool {
+    pub(crate) fn is_service_configured(&self, kind: ServiceKind) -> bool {
         self.types.iter().any(|t| {
-            let service::Service(kind, _) = t;
-            kind.to_string() == service_type
+            let service::Service(k, _) = t;
+            *k == kind
         })
     }
 
@@ -194,8 +195,8 @@ mod tests {
         assert!(defs.is_ok());
 
         let d = defs.unwrap();
-        assert_eq!(d.is_service_configured("grpc"), true);
-        assert_eq!(d.is_service_configured("http"), true);
-        assert_eq!(d.is_service_configured("websocket"), false);
+        assert_eq!(d.is_service_configured(ServiceKind::Grpc), true);
+        assert_eq!(d.is_service_configured(ServiceKind::Http), true);
+        assert_eq!(d.is_service_configured(ServiceKind::Custom("websocket".to_string())), false);
     }
 }

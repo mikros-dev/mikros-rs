@@ -13,7 +13,7 @@ pub(crate) struct Env {
     #[env_settings(variable = "MIKROS_TRACKER_HEADER_NAME", default = "X-Request-ID")]
     pub tracker_header_name: String,
 
-    #[env_settings(variable = "MIKROS_COUPLED_NAMESPACE")]
+    #[env_settings(variable = "MIKROS_COUPLED_NAMESPACE", default = "localhost")]
     pub coupled_namespace: String,
 
     #[env_settings(variable = "MIKROS_COUPLED_PORT", default = "7070")]
@@ -74,10 +74,10 @@ mod tests {
 
     #[test]
     fn test_load_env() {
-        std::env::set_var("MIKROS_COUPLED_NAMESPACE", "localhost".to_string());
+        std::env::set_var("MIKROS_COUPLED_NAMESPACE", "127.0.0.1".to_string());
         let filename = assets_path().join("definitions/service.toml.ok");
         let defs = Definitions::new(filename.to_str(), None).unwrap();
         let e = Env::load(&defs).unwrap();
-        println!("{:?}", e);
+        assert_eq!(e.coupled_namespace, "127.0.0.1".to_string());
     }
 }

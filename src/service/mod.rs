@@ -66,22 +66,48 @@ impl Service {
 
     /// Puts the service to run.
     pub async fn start(&mut self) -> merrors::Result<()> {
-        self.start_service_validations()?;
+        self.validate_definitions()?;
+
+        // initialize service internals
+        // print service resources
+
+        self.run().await
+    }
+
+    fn validate_definitions(&mut self) -> merrors::Result<()> {
+        if self.servers.is_empty() {
+            return Err(merrors::Error::EmptyServiceFound)
+        }
+
+        // Script services should be a single service.
+        if self.definitions.is_script_service() && self.definitions.types.len() > 1 {
+            return Err(merrors::Error::UnsupportedServicesCombination)
+        }
+
+        for t in &self.definitions.types {
+            if !self.servers.iter().any(|s| s.kind() == t.0) {
+                return Err(merrors::Error::ServiceTypeUninitialized(t.0.clone()))
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn run(&mut self) -> merrors::Result<()> {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
-        // execute service main task
         for s in self.servers.iter_mut() {
-            self.logger.infof("service starting", s.information());
-
-            if self.definitions.is_service_configured(s.name()) {
+            if self.definitions.is_service_configured(s.kind()) {
                 let mut service = s.clone();
                 let context = self.context.clone();
                 let mut shutdown_rx = self.shutdown_tx.subscribe();
                 let tx = tx.clone();
 
+                self.logger.infof("service starting", s.information());
+
                 let handle = task::spawn(async move {
                     context.logger().debugf("starting service task", logger::fields![
-                        "task_name" => logger::fields::FieldValue::String(service.name().to_string()),
+                        "task_name" => logger::fields::FieldValue::String(service.kind().to_string()),
                     ]);
 
                     loop {
@@ -93,7 +119,7 @@ impl Service {
                         tokio::select! {
                             _ = shutdown_rx.changed() => {
                                 context.logger().debugf("finishing service task", logger::fields![
-                                    "task_name" => logger::fields::FieldValue::String(service.name().to_string()),
+                                    "task_name" => logger::fields::FieldValue::String(service.kind().to_string()),
                                 ]);
 
                                 break;
@@ -102,7 +128,7 @@ impl Service {
                     }
 
                     context.logger().debugf("service task finished",logger::fields![
-                        "task_name" => logger::fields::FieldValue::String(service.name().to_string()),
+                        "task_name" => logger::fields::FieldValue::String(service.kind().to_string()),
                     ]);
                 });
 
@@ -125,19 +151,6 @@ impl Service {
         Ok(())
     }
 
-    fn start_service_validations(&mut self) -> merrors::Result<()> {
-        if self.servers.is_empty() {
-            return Err(merrors::Error::EmptyServiceFound)
-        }
-
-        // Script services should be a single service.
-        if self.definitions.is_script_service() && self.definitions.types.len() > 1 {
-            return Err(merrors::Error::UnsupportedServicesCombination)
-        }
-
-        Ok(())
-    }
-
     async fn wait_finishing_signal(&self) {
         // Wait for a signal to finish the service.
         if !self.definitions.is_script_service() {
@@ -148,7 +161,7 @@ impl Service {
     async fn stop_service_tasks(&mut self) {
         // Call service stop callback so the service can stop itself
         for s in &mut self.servers {
-            if self.definitions.is_service_configured(s.name()) {
+            if self.definitions.is_service_configured(s.kind()) {
                 s.stop(&self.context).await;
             }
         }

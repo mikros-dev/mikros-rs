@@ -1,3 +1,4 @@
+use crate::definition;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -10,6 +11,7 @@ pub enum Error {
     FeatureNotFound(String),
     InternalServiceError(String),
     UnsupportedServicesCombination,
+    ServiceTypeUninitialized(definition::ServiceKind)
 }
 
 impl Error {
@@ -22,6 +24,7 @@ impl Error {
             Error::FeatureNotFound(s) => format!("feature {} not found", s),
             Error::InternalServiceError(s) => format!("internal service error: {}", s),
             Error::UnsupportedServicesCombination => "unsupported services combination".to_string(),
+            Error::ServiceTypeUninitialized(s) => format!("service type uninitialized: {}", s),
         }
     }
 }

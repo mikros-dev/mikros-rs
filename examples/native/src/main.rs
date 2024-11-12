@@ -12,6 +12,7 @@ use service::Service as AppService;
 async fn main() {
     let s = Arc::new(Mutex::new(AppService::new()));
     let svc = ServiceBuilder::default()
+        .as_script(s.clone())
         .as_native(s.clone())
         .build();
 

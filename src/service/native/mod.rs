@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use logger::fields::FieldValue;
 
-use crate::{errors as merrors, plugin};
+use crate::{definition, errors as merrors, plugin};
 use crate::service::context::Context;
 
 #[async_trait::async_trait]
@@ -52,8 +52,8 @@ impl Native {
 
 #[async_trait::async_trait]
 impl plugin::service::Service for Native {
-    fn name(&self) -> &str {
-        "native"
+    fn kind(&self) -> definition::ServiceKind {
+        definition::ServiceKind::Native
     }
 
     fn initialize(&mut self) -> merrors::Result<()> {
@@ -70,7 +70,7 @@ impl plugin::service::Service for Native {
 
     fn information(&self) -> HashMap<String, FieldValue> {
         logger::fields![
-            "kind".to_string() => FieldValue::String(self.name().to_string()),
+            "kind".to_string() => FieldValue::String(self.kind().to_string()),
         ]
     }
 }

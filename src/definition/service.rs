@@ -76,7 +76,6 @@ mod tests {
     fn test_service_type_with_port() {
         let data = "types = [\"grpc:9090\", \"http:8080\", \"native\", \"subscriber\", \"consumer:7070\"]";
         let config: Config = toml::from_str(data).unwrap();
-        println!("{:?}", config);
         assert_eq!(config.types.len(), 5);
     }
 
