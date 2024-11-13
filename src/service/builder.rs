@@ -45,6 +45,7 @@ impl ServiceBuilder {
             + Clone
             + NamedService
             + Send
+            + Sync
             + 'static,
         S::Future: Send + 'static,
     {

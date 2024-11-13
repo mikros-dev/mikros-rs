@@ -12,12 +12,12 @@ pub trait NativeService: Send + NativeServiceClone {
     /// This is the place where the service/application must be initialized. It
     /// should do the required initialization, put any job to execute in background
     /// and leave. It shouldn't block.
-    fn start(&mut self, ctx: &Context) -> merrors::Result<()>;
+    fn start(&self, ctx: &Context) -> merrors::Result<()>;
 
     /// The stop callback is called when the service/application is requested
     /// to finish. It must be responsible for finishing any previously started
     /// job.
-    fn stop(&mut self, ctx: &Context);
+    fn stop(&self, ctx: &Context);
 }
 
 pub trait NativeServiceClone {
@@ -68,11 +68,11 @@ impl plugin::service::Service for Native {
         ]
     }
 
-    async fn run(&mut self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
+    async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
         self.svc.lock().unwrap().start(ctx)
     }
 
-    async fn stop(&mut self, ctx: &Context) {
+    async fn stop(&self, ctx: &Context) {
         self.svc.lock().unwrap().stop(ctx)
     }
 }

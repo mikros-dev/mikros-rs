@@ -13,8 +13,6 @@ use crate::{definition, env, plugin};
 use crate::service::context::Context;
 use crate::errors as merrors;
 
-pub trait GrpcService: Send + 'static {}
-
 #[derive(Clone)]
 pub(crate) struct Grpc<S> {
     port: i32,
@@ -27,6 +25,7 @@ where
         + NamedService
         + Clone
         + Send
+        + Sync
         + 'static,
     S::Future: Send + 'static,
 {
@@ -45,6 +44,7 @@ where
         + NamedService
         + Clone
         + Send
+        + Sync
         + 'static,
     S::Future: Send + 'static,
 {
@@ -65,11 +65,12 @@ where
     fn info(&self) -> HashMap<String, FieldValue> {
         logger::fields![
             "svc.port" => FieldValue::Number(self.port as i64),
+            "svc.mode" => FieldValue::String(definition::ServiceKind::Grpc.to_string()),
         ]
     }
 
-    async fn run(&mut self, _ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
-        let addr2 = format!("127.0.0.1:{}", self.port).parse().unwrap();
+    async fn run(&self, _ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
+        let addr = format!("127.0.0.1:{}", self.port).parse().unwrap();
         let shutdown_signal = async {
             let mut shutdown_rx = shutdown_rx.clone();
 
@@ -77,16 +78,18 @@ where
             shutdown_rx.changed().await.ok();
         };
 
-        let _ = Server::builder()
+        if let Err(e) = Server::builder()
             .add_service(self.server.clone())
-            .serve_with_shutdown(addr2, shutdown_signal)
-            .await;
+            .serve_with_shutdown(addr, shutdown_signal)
+            .await
+        {
+            return Err(merrors::Error::InternalServiceError(format!("could not initialize grpc server: {}", e.to_string())))
+        }
 
         Ok(())
     }
 
-    async fn stop(&mut self, _ctx: &Context) {
-        println!("stop service");
-        println!("port: {}", self.port);
+    async fn stop(&self, _ctx: &Context) {
+        // noop
     }
 }

@@ -12,8 +12,8 @@ pub trait Service: Send + ServiceClone {
     fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
     fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
 
-    async fn run(&mut self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()>;
-    async fn stop(&mut self, ctx: &Context);
+    async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()>;
+    async fn stop(&self, ctx: &Context);
 }
 
 pub trait ServiceClone {

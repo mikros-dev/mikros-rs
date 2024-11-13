@@ -8,8 +8,8 @@ use crate::{definition, env, errors as merrors, plugin};
 use crate::service::context::Context;
 
 pub trait ScriptService: Send + ScriptServiceClone {
-    fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
-    fn cleanup(&mut self, ctx: &Context);
+    fn run(&self, ctx: &Context) -> merrors::Result<()>;
+    fn cleanup(&self, ctx: &Context);
 }
 
 pub trait ScriptServiceClone {
@@ -60,11 +60,11 @@ impl plugin::service::Service for Script {
         ]
     }
 
-    async fn run(&mut self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
+    async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
         self.svc.lock().unwrap().run(ctx)
     }
 
-    async fn stop(&mut self, ctx: &Context) {
+    async fn stop(&self, ctx: &Context) {
         self.svc.lock().unwrap().cleanup(ctx)
     }
 }
