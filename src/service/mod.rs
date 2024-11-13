@@ -148,21 +148,17 @@ impl Service {
                     "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
                 ]);
 
-                // FIXME: check if this loop is really required
-                loop {
-                    if let Err(e) = svc.run(&context, shutdown_rx.clone()).await {
-                        let _ = tx.send(e).await;
-                        return;
-                    }
+                if let Err(e) = svc.run(&context, shutdown_rx.clone()).await {
+                    let _ = tx.send(e).await;
+                    return;
+                }
 
-                    tokio::select! {
-                        _ = shutdown_rx.changed() => {
-                            context.logger().debugf("finishing service task", logger::fields![
-                                "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
-                            ]);
+                tokio::select! {
+                    _ = shutdown_rx.changed() => {
+                        context.logger().debugf("finishing service task", logger::fields![
+                            "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
+                        ]);
 
-                            break;
-                        }
                     }
                 }
 

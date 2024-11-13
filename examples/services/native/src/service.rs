@@ -12,7 +12,7 @@ impl Service {
 }
 
 impl mikros::service::native::NativeService for Service {
-    fn start(&mut self, ctx: &Context) -> merrors::Result<()> {
+    fn start(&self, ctx: &Context) -> merrors::Result<()> {
         ctx.logger().info("Start native service");
 //        Err(merrors::Error::InternalServiceError("some internal error happened".to_string()))
 
@@ -27,13 +27,13 @@ impl mikros::service::native::NativeService for Service {
         Ok(())
     }
 
-    fn stop(&mut self, ctx: &Context) {
+    fn stop(&self, ctx: &Context) {
         ctx.logger().info("Stop native service");
     }
 }
 
 impl mikros::service::script::ScriptService for Service {
-    fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
+    fn run(&self, ctx: &Context) -> merrors::Result<()> {
         ctx.logger().info("Start script service");
         features::example::retrieve(ctx, |api| {
             api.do_something();
@@ -42,7 +42,7 @@ impl mikros::service::script::ScriptService for Service {
         Ok(())
     }
 
-    fn cleanup(&mut self, ctx: &Context) {
+    fn cleanup(&self, ctx: &Context) {
         ctx.logger().info("Stop script service");
     }
 }
