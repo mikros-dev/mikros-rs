@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use http::{request::Request, response::Response};
 use logger::fields::FieldValue;
@@ -12,6 +13,7 @@ use tonic::transport::Server;
 use crate::{definition, env, plugin};
 use crate::service::context::Context;
 use crate::errors as merrors;
+use crate::grpc;
 
 #[derive(Clone)]
 pub(crate) struct Grpc<S> {
@@ -69,8 +71,12 @@ where
         ]
     }
 
-    async fn run(&self, _ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
-        let addr = format!("127.0.0.1:{}", self.port).parse().unwrap();
+    async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
+        let addr = SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+            self.port as u16,
+        );
+
         let shutdown_signal = async {
             let mut shutdown_rx = shutdown_rx.clone();
 
@@ -78,7 +84,12 @@ where
             shutdown_rx.changed().await.ok();
         };
 
+        let layer = tower::ServiceBuilder::new()
+            .layer(grpc::ContextExtractor::new(&ctx))
+            .into_inner();
+
         if let Err(e) = Server::builder()
+            .layer(layer)
             .add_service(self.server.clone())
             .serve_with_shutdown(addr, shutdown_signal)
             .await

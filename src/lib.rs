@@ -6,3 +6,4 @@ pub mod plugin;
 pub mod service;
 
 mod args;
+mod grpc;

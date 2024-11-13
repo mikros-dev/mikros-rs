@@ -47,3 +47,8 @@ impl Context {
         self.definitions.name.clone()
     }
 }
+
+/// Retrieves the mikros Context from an RPC request argument.
+pub fn from_request<B: prost::Message>(request: &tonic::Request<B>) -> Arc<Context> {
+    request.extensions().get::<Arc<Context>>().unwrap().clone()
+}
