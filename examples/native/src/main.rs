@@ -5,7 +5,6 @@ extern crate mikros;
 use std::sync::{Arc, Mutex};
 
 use mikros::service::builder::{ServiceBuilder};
-use mikros::service::script::ScriptService;
 use service::Service as AppService;
 
 #[tokio::main]

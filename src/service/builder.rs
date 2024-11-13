@@ -1,12 +1,14 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::{errors as merrors, plugin};
+use crate::{definition, errors as merrors, plugin};
 use crate::service::native::{NativeService, Native};
 use crate::service::script::{ScriptService, Script};
+use crate::service::grpc::Grpc;
 use crate::service::Service;
 
 pub struct ServiceBuilder {
-    pub(crate) servers: Vec<Box<dyn plugin::service::Service>>,
+    pub(crate) servers: HashMap<String, Box<dyn plugin::service::Service>>,
     pub(crate) features: Vec<Box<dyn plugin::feature::Feature>>,
     pub(crate) services: Vec<Box<dyn plugin::service::Service>>,
 }
@@ -14,7 +16,7 @@ pub struct ServiceBuilder {
 impl ServiceBuilder {
     fn new() -> Self {
         Self {
-            servers: Vec::new(),
+            servers: HashMap::new(),
             features: Vec::new(),
             services: Vec::new(),
         }
@@ -22,20 +24,20 @@ impl ServiceBuilder {
 
     /// Sets the current service as a native type.
     pub fn as_native<S: NativeService + 'static>(&mut self, svc: Arc<Mutex<S>>) -> &mut Self {
-        self.servers.push(Box::new(Native::new(svc)));
+        self.servers.insert(definition::ServiceKind::Native.to_string(), Box::new(Native::new(svc)));
         self
     }
 
     /// Sets the current service as a script type.
     pub fn as_script<S: ScriptService + 'static>(&mut self, svc: Arc<Mutex<S>>) -> &mut Self {
-        self.servers.push(Box::new(Script::new(svc)));
+        self.servers.insert(definition::ServiceKind::Script.to_string(), Box::new(Script::new(svc)));
         self
     }
 
-    /// Sets the current service as an external type.
-    // pub fn as_external_service<S: plugin::service::Service + 'static>(&mut self, svc: Arc<Mutex<S>>) -> &mut Self {
-    //     self
-    // }
+    pub fn as_grpc(&mut self) -> &mut Self {
+        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new()));
+        self
+    }
 
     /// Adds external features into the current service environment.
     pub fn with_features(&mut self, features: Vec<Box<dyn plugin::feature::Feature>>) -> &mut Self {

@@ -5,7 +5,7 @@ use serde::{Deserialize, de::IntoDeserializer};
 use crate::definition::ServiceKind;
 
 #[derive(Debug, Clone)]
-pub(crate) struct Service(pub ServiceKind, pub Option<i32>);
+pub struct Service(pub ServiceKind, pub Option<i32>);
 
 impl<'a> serde::Deserialize<'a> for Service {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

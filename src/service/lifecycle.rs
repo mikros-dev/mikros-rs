@@ -1,11 +1,13 @@
+use crate::errors as merrors;
 
+#[async_trait::async_trait]
 pub trait Lifecycle {
-    fn on_start(&self) -> crate::errors::Result<()> {
+    async fn on_start(&self) -> merrors::Result<()> {
         println!("default on_start");
         Ok(())
     }
 
-    fn on_finish(&self) -> crate::errors::Result<()> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         println!("default on_finish");
         Ok(())
     }

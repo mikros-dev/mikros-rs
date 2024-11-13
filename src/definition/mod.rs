@@ -1,5 +1,5 @@
+pub mod service;
 mod validation;
-mod service;
 
 use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter};
@@ -7,14 +7,14 @@ use std::sync::Arc;
 use std::str::FromStr;
 use validator::{ValidateArgs};
 
-use crate::errors as merrors;
+use crate::{definition, errors as merrors};
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
 #[derive(serde_derive::Deserialize, validator::Validate)]
 #[validate(context = CustomServiceInfo)]
 #[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
-pub(crate) struct Definitions {
+pub struct Definitions {
     pub name: String,
     pub version: String,
     pub language: String,
@@ -27,7 +27,7 @@ pub(crate) struct Definitions {
 }
 
 #[derive(serde_derive::Deserialize)]
-pub(crate) struct Log {
+pub struct Log {
     pub level: String
 }
 
@@ -67,7 +67,7 @@ impl Display for ServiceKind {
 }
 
 #[derive(Default)]
-pub(crate) struct CustomServiceInfo {
+pub struct CustomServiceInfo {
     pub types: Option<Vec<String>>,
 }
 
@@ -113,18 +113,18 @@ impl Definitions {
         }
     }
 
-    pub(crate) fn is_service_configured(&self, kind: ServiceKind) -> bool {
-        self.types.iter().any(|t| {
-            let service::Service(k, _) = t;
-            *k == kind
-        })
-    }
-
     pub(crate) fn is_script_service(&self) -> bool {
         self.types.iter().any(|t| {
             let service::Service(kind, _) = t;
             kind.to_string() == "script"
         })
+    }
+
+    pub(crate) fn get_service_type(&self, kind: ServiceKind) -> merrors::Result<&service::Service> {
+        match self.types.iter().find(|t| t.0 == definition::ServiceKind::Grpc) {
+            Some(t) => Ok(t),
+            None => Err(merrors::Error::NotFound(format!("could not find service kind '{}'", kind)))
+        }
     }
 }
 

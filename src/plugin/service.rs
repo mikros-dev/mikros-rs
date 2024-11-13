@@ -1,13 +1,14 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::{definition, errors as merrors};
+use crate::{definition, env, errors as merrors};
 use crate::service::context::Context;
 
 #[async_trait::async_trait]
 pub trait Service: Send + ServiceClone {
     fn kind(&self) -> definition::ServiceKind;
-    fn initialize(&mut self) -> merrors::Result<()>;
-    fn information(&self) -> HashMap<String, logger::fields::FieldValue>;
+    fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
+    fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
 
     async fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
     async fn stop(&mut self, ctx: &Context);

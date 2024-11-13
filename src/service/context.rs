@@ -17,7 +17,12 @@ pub struct Context {
 }
 
 impl Context {
-    pub(crate) fn new(logger: Arc<logger::Logger>, definitions: Arc<Definitions>, builder: &ServiceBuilder) -> merrors::Result<Self> {
+    pub(crate) fn new(
+        envs: Arc<Env>,
+        logger: Arc<logger::Logger>,
+        definitions: Arc<Definitions>,
+        builder: &ServiceBuilder,
+    ) -> merrors::Result<Self> {
         let mut features = features::register_features();
         for f in builder.features.clone() {
             features.push(f);
@@ -25,7 +30,7 @@ impl Context {
 
         Ok(Self {
             logger,
-            envs: Env::load(&definitions)?,
+            envs,
             definitions,
             features: Arc::new(Mutex::new(features)),
         })

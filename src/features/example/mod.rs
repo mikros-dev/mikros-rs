@@ -46,7 +46,7 @@ impl plugin::feature::Feature for Example {
         todo!()
     }
 
-    fn init(&mut self) {
+    fn initialize(&mut self) {
         todo!()
     }
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use logger::fields::FieldValue;
 
-use crate::{definition, errors as merrors, plugin};
+use crate::{definition, env, errors as merrors, plugin};
 use crate::service::context::Context;
 
 pub trait ScriptService: Send + ScriptServiceClone {
@@ -48,8 +48,14 @@ impl plugin::service::Service for Script {
         definition::ServiceKind::Script
     }
 
-    fn initialize(&mut self) -> merrors::Result<()> {
+    fn initialize(&mut self, _: Arc<env::Env>, _: Arc<definition::Definitions>) -> merrors::Result<()> {
         Ok(())
+    }
+
+    fn info(&self) -> HashMap<String, FieldValue> {
+        logger::fields![
+            "kind".to_string() => FieldValue::String(self.kind().to_string()),
+        ]
     }
 
     async fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
@@ -58,11 +64,5 @@ impl plugin::service::Service for Script {
 
     async fn stop(&mut self, ctx: &Context) {
         self.svc.lock().unwrap().cleanup(ctx)
-    }
-
-    fn information(&self) -> HashMap<String, FieldValue> {
-        logger::fields![
-            "kind".to_string() => FieldValue::String(self.kind().to_string()),
-        ]
     }
 }

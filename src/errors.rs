@@ -11,7 +11,8 @@ pub enum Error {
     FeatureNotFound(String),
     InternalServiceError(String),
     UnsupportedServicesCombination,
-    ServiceTypeUninitialized(definition::ServiceKind)
+    ServiceKindUninitialized(definition::ServiceKind),
+    NotFound(String),
 }
 
 impl Error {
@@ -24,7 +25,8 @@ impl Error {
             Error::FeatureNotFound(s) => format!("feature {} not found", s),
             Error::InternalServiceError(s) => format!("internal service error: {}", s),
             Error::UnsupportedServicesCombination => "unsupported services combination".to_string(),
-            Error::ServiceTypeUninitialized(s) => format!("service type uninitialized: {}", s),
+            Error::ServiceKindUninitialized(s) => format!("service type uninitialized: {}", s),
+            Error::NotFound(s) => format!("not found: {}", s),
         }
     }
 }

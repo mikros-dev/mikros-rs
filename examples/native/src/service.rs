@@ -14,7 +14,7 @@ impl Service {
 impl mikros::service::native::NativeService for Service {
     fn start(&mut self, ctx: &Context) -> merrors::Result<()> {
         ctx.logger().info("Start native service");
-//        Err(merrors::Error::ServiceError("some internal error happened".to_string()))
+//        Err(merrors::Error::InternalServiceError("some internal error happened".to_string()))
 
         let value = ctx.env("CUSTOM_ENV").unwrap();
         ctx.logger().info(format!("env value '{}'", value).as_str());

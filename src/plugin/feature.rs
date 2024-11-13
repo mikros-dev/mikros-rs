@@ -11,7 +11,7 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
     fn can_be_initialized(&self) -> bool;
 
     /// Initializes the feature.
-    fn init(&mut self);
+    fn initialize(&mut self);
 
     /// Returns the feature API that should be used by services and applications.
     fn service_api(&self) -> Option<&dyn std::any::Any>;

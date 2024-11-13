@@ -6,7 +6,7 @@ use crate::errors as merrors;
 
 #[derive(EnvSettings, Debug)]
 #[env_settings(delay)]
-pub(crate) struct Env {
+pub struct Env {
     #[env_settings(variable = "MIKROS_SERVICE_DEPLOY", default = "local")]
     pub deployment_env: String,
 
