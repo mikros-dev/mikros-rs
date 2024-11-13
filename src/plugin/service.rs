@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use tokio::sync::watch;
+
 use crate::{definition, env, errors as merrors};
 use crate::service::context::Context;
 
@@ -10,7 +12,7 @@ pub trait Service: Send + ServiceClone {
     fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
     fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
 
-    async fn run(&mut self, ctx: &Context) -> merrors::Result<()>;
+    async fn run(&mut self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()>;
     async fn stop(&mut self, ctx: &Context);
 }
 

@@ -2,8 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::definition::Definitions;
 use crate::env::Env;
-use crate::{errors as merrors, features, plugin};
-use crate::service::builder::ServiceBuilder;
+use crate::{errors as merrors, plugin};
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.
@@ -21,13 +20,8 @@ impl Context {
         envs: Arc<Env>,
         logger: Arc<logger::Logger>,
         definitions: Arc<Definitions>,
-        builder: &ServiceBuilder,
+        features: Vec<Box<dyn plugin::feature::Feature>>,
     ) -> merrors::Result<Self> {
-        let mut features = features::register_features();
-        for f in builder.features.clone() {
-            features.push(f);
-        }
-
         Ok(Self {
             logger,
             envs,

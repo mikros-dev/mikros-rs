@@ -14,7 +14,7 @@ use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
 use crate::definition::{Definitions, ServiceKind};
-use crate::{errors as merrors, plugin};
+use crate::{errors as merrors, features, plugin};
 use crate::env::Env;
 use crate::service::builder::ServiceBuilder;
 
@@ -29,18 +29,23 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn new(builder: &ServiceBuilder) -> merrors::Result<Self> {
-        let definitions = Service::load_definitions(builder)?;
+    pub fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
+        let definitions = Service::load_definitions(&builder)?;
         let logger = Self::start_logger(&definitions);
         let (shutdown_tx, _) = watch::channel(());
         let envs = Env::load(&definitions)?;
+
+        let mut features = features::register_features();
+        for f in builder.features.clone() {
+            features.push(f);
+        }
 
         Ok(Service {
             envs: envs.clone(),
             definitions: definitions.clone(),
             logger: logger.clone(),
-            context: Self::build_context(envs.clone(), logger, definitions, builder)?,
-            servers: builder.servers.clone(),
+            context: Self::build_context(envs.clone(), logger, definitions, features)?,
+            servers: builder.servers,
             handles: Vec::new(),
             shutdown_tx,
         })
@@ -66,9 +71,9 @@ impl Service {
         envs: Arc<Env>,
         logger: Arc<logger::Logger>,
         defs: Arc<Definitions>,
-        builder: &ServiceBuilder,
+        features: Vec<Box<dyn plugin::feature::Feature>>,
     ) -> merrors::Result<context::Context> {
-        context::Context::new(envs, logger, defs, builder)
+        context::Context::new(envs, logger, defs, features)
     }
 
     /// Puts the service to run.
@@ -92,7 +97,7 @@ impl Service {
         }
 
         for t in &self.definitions.types {
-            if let None = self.servers.get(&t.0.to_string()) {
+            if self.servers.get(&t.0.to_string()).is_none() {
                 return Err(merrors::Error::ServiceKindUninitialized(t.0.clone()))
             }
         }
@@ -105,10 +110,13 @@ impl Service {
         Ok(())
     }
 
-    fn initialize_service_internals(&self) -> merrors::Result<()> {
-        for s in &self.definitions.types {
-            let mut svc = self.get_server(&s.0)?.clone();
-            svc.initialize(self.envs.clone(), self.definitions.clone())?
+    fn initialize_service_internals(&mut self) -> merrors::Result<()> {
+        let definitions = self.definitions.clone();
+        let envs = self.envs.clone();
+
+        for s in &definitions.types {
+            let svc = self.get_server(&s.0)?;
+            svc.initialize(envs.clone(), definitions.clone())?
         }
 
         // couple clients
@@ -122,12 +130,15 @@ impl Service {
     }
 
     async fn run(&mut self) -> merrors::Result<()> {
+        let definitions = self.definitions.clone();
+        let context = self.context.clone();
+        let shutdown_tx = self.shutdown_tx.clone();
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
-        for s in &self.definitions.types {
+        for s in &definitions.types {
             let mut svc = self.get_server(&s.0)?.clone();
-            let context = self.context.clone();
-            let mut shutdown_rx = self.shutdown_tx.subscribe();
+            let context = context.clone();
+            let mut shutdown_rx = shutdown_tx.subscribe();
             let tx = tx.clone();
 
             self.logger.infof("service is running", svc.info());
@@ -137,8 +148,9 @@ impl Service {
                     "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
                 ]);
 
+                // FIXME: check if this loop is really required
                 loop {
-                    if let Err(e) = svc.run(&context).await {
+                    if let Err(e) = svc.run(&context, shutdown_rx.clone()).await {
                         let _ = tx.send(e).await;
                         return;
                     }
@@ -185,10 +197,13 @@ impl Service {
     }
 
     async fn stop_service_tasks(&mut self) -> merrors::Result<()> {
+        let definitions = self.definitions.clone();
+        let context = self.context.clone();
+
         // Call service stop callback so the service can stop itself
-        for s in &self.definitions.types {
-            let mut svc = self.get_server(&s.0)?.clone();
-            svc.stop(&self.context).await;
+        for s in &definitions.types {
+            let svc = self.get_server(&s.0)?;
+            svc.stop(&context).await;
         }
 
         // Then stops our task runner
@@ -203,8 +218,8 @@ impl Service {
         Ok(())
     }
 
-    fn get_server(&self, kind: &ServiceKind) -> merrors::Result<&Box<dyn plugin::service::Service>> {
-        match self.servers.get(&kind.to_string()) {
+    fn get_server(&mut self, kind: &ServiceKind) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
+        match self.servers.get_mut(&kind.to_string()) {
             None => Err(merrors::Error::NotFound(format!("service {} implementation not found", kind))),
             Some(s) => Ok(s),
         }

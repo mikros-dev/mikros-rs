@@ -1,0 +1,13 @@
+[package]
+name = "grpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tonic = "0.12.3"
+prost = "0.13.3"
+tokio = { version = "1.41.1", features = ["full"] }
+mikros = { path = "../../../" }
+
+[build-dependencies]
+tonic-build = "0.12.3"

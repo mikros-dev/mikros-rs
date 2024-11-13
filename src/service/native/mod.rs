@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
 use logger::fields::FieldValue;
+use tokio::sync::watch;
 
 use crate::{definition, env, errors as merrors, plugin};
 use crate::service::context::Context;
@@ -66,7 +68,7 @@ impl plugin::service::Service for Native {
         ]
     }
 
-    async fn run(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn run(&mut self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
         self.svc.lock().unwrap().start(ctx)
     }
 

@@ -9,8 +9,12 @@ env-settings = "0.1.11"
 env-settings-derive = "0.1.11"
 env-settings-utils = "0.1.11"
 logger = { git = "https://github.com/rsfreitas/logger" }
+http = "1.1.0"
 serde = "1.0.214"
 serde_derive = "1.0.214"
-toml = "0.8.19"
+tonic = { version = "0.12.3", features = ["transport"]}
 tokio = { version = "1.41.1", features = ["full"] }
+toml = "0.8.19"
+tower = "0.5.1"
+tower-service = "0.3.3"
 validator = { version = "0.19.0", features = ["derive"] }

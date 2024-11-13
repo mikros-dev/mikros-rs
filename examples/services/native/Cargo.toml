@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-mikros = { path = "../../" }
+mikros = { path = "../../../" }
 tokio = { version = "1.41.1", features = ["full"] }
