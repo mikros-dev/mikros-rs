@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use std::convert::Infallible;
 
+use futures::lock::Mutex;
 use http::{request::Request, response::Response};
 use tonic::body::BoxBody;
 use tonic::server::NamedService;
@@ -10,6 +11,7 @@ use crate::{definition, errors as merrors, plugin};
 use crate::service::native::{NativeService, Native};
 use crate::service::script::{ScriptService, Script};
 use crate::service::grpc::Grpc;
+use crate::service::lifecycle::Lifecycle;
 use crate::service::Service;
 
 pub struct ServiceBuilder {
@@ -42,8 +44,9 @@ impl ServiceBuilder {
     pub fn grpc<S>(mut self, svc: S) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
-            + Clone
             + NamedService
+            + Lifecycle
+            + Clone
             + Send
             + Sync
             + 'static,

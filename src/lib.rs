@@ -7,3 +7,6 @@ pub mod service;
 
 mod args;
 mod grpc;
+
+// Forward some declarations for services
+pub use futures::lock::Mutex as FutureMutex;

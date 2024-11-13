@@ -14,6 +14,7 @@ use crate::{definition, env, plugin};
 use crate::service::context::Context;
 use crate::errors as merrors;
 use crate::grpc;
+use crate::service::lifecycle::Lifecycle;
 
 #[derive(Clone)]
 pub(crate) struct Grpc<S> {
@@ -25,6 +26,7 @@ impl<S> Grpc<S>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
+        + Lifecycle
         + Clone
         + Send
         + Sync
@@ -40,10 +42,32 @@ where
 }
 
 #[async_trait::async_trait]
+impl<S> Lifecycle for Grpc<S>
+where
+    S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+        + NamedService
+        + Lifecycle
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    S::Future: 'static + Send,
+{
+    async fn on_start(&mut self) -> merrors::Result<()> {
+        self.server.on_start().await
+    }
+
+    async fn on_finish(&self) -> merrors::Result<()> {
+        self.server.on_finish().await
+    }
+}
+
+#[async_trait::async_trait]
 impl<S> plugin::service::Service for Grpc<S>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
+        + Lifecycle
         + Clone
         + Send
         + Sync
@@ -85,7 +109,7 @@ where
         };
 
         let layer = tower::ServiceBuilder::new()
-            .layer(grpc::ContextExtractor::new(&ctx))
+            .layer(grpc::ContextExtractor::new(ctx))
             .into_inner();
 
         if let Err(e) = Server::builder()
@@ -94,7 +118,7 @@ where
             .serve_with_shutdown(addr, shutdown_signal)
             .await
         {
-            return Err(merrors::Error::InternalServiceError(format!("could not initialize grpc server: {}", e.to_string())))
+            return Err(merrors::Error::InternalServiceError(format!("could not initialize grpc server: {}", e)))
         }
 
         Ok(())

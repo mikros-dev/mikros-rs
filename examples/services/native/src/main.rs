@@ -2,14 +2,15 @@ mod service;
 
 extern crate mikros;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use mikros::FutureMutex;
 use mikros::service::builder::{ServiceBuilder};
 use service::Service as AppService;
 
 #[tokio::main]
 async fn main() {
-    let s = Arc::new(Mutex::new(AppService::new()));
+    let s = Arc::new(FutureMutex::new(AppService::new()));
     let svc = ServiceBuilder::default()
         .script(s.clone())
         .native(s.clone())

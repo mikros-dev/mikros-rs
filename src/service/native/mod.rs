@@ -1,14 +1,16 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 
+use futures::lock::Mutex;
 use logger::fields::FieldValue;
 use tokio::sync::watch;
 
 use crate::{definition, env, errors as merrors, plugin};
 use crate::service::context::Context;
+use crate::service::lifecycle::Lifecycle;
 
 #[async_trait::async_trait]
-pub trait NativeService: Send + NativeServiceClone {
+pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
     /// This is the place where the service/application must be initialized. It
     /// should do the required initialization, put any job to execute in background
     /// and leave. It shouldn't block.
@@ -53,6 +55,17 @@ impl Native {
 }
 
 #[async_trait::async_trait]
+impl Lifecycle for Native {
+    async fn on_start(&mut self) -> merrors::Result<()> {
+        self.svc.lock().await.on_start().await
+    }
+
+    async fn on_finish(&self) -> merrors::Result<()> {
+        self.svc.lock().await.on_finish().await
+    }
+}
+
+#[async_trait::async_trait]
 impl plugin::service::Service for Native {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Native
@@ -69,10 +82,10 @@ impl plugin::service::Service for Native {
     }
 
     async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
-        self.svc.lock().unwrap().start(ctx)
+        self.svc.lock().await.start(ctx)
     }
 
     async fn stop(&self, ctx: &Context) {
-        self.svc.lock().unwrap().stop(ctx)
+        self.svc.lock().await.stop(ctx)
     }
 }

@@ -3,8 +3,7 @@ pub mod context;
 pub mod grpc;
 pub mod native;
 pub mod script;
-
-mod lifecycle;
+pub mod lifecycle;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -81,7 +80,7 @@ impl Service {
         self.logger.info("service starting");
         self.validate_definitions()?;
         self.start_features()?;
-        self.initialize_service_internals()?;
+        self.initialize_service_internals().await?;
         self.print_service_resources();
         self.run().await
     }
@@ -97,7 +96,7 @@ impl Service {
         }
 
         for t in &self.definitions.types {
-            if self.servers.get(&t.0.to_string()).is_none() {
+            if !self.servers.contains_key(&t.0.to_string()) {
                 return Err(merrors::Error::ServiceKindUninitialized(t.0.clone()))
             }
         }
@@ -110,7 +109,7 @@ impl Service {
         Ok(())
     }
 
-    fn initialize_service_internals(&mut self) -> merrors::Result<()> {
+    async fn initialize_service_internals(&mut self) -> merrors::Result<()> {
         let definitions = self.definitions.clone();
         let envs = self.envs.clone();
 
@@ -119,8 +118,12 @@ impl Service {
             svc.initialize(envs.clone(), definitions.clone())?
         }
 
-        // couple clients
-        // call lifecycle on_start
+        // TODO couple clients
+
+        for s in &definitions.types {
+            let svc = self.get_server(&s.0)?;
+            svc.on_start().await?;
+        }
 
         Ok(())
     }
@@ -200,6 +203,7 @@ impl Service {
         for s in &definitions.types {
             let svc = self.get_server(&s.0)?;
             svc.stop(&context).await;
+            svc.on_finish().await?;
         }
 
         // Then stops our task runner

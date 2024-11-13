@@ -5,9 +5,10 @@ use tokio::sync::watch;
 
 use crate::{definition, env, errors as merrors};
 use crate::service::context::Context;
+use crate::service::lifecycle::Lifecycle;
 
 #[async_trait::async_trait]
-pub trait Service: Send + ServiceClone {
+pub trait Service: ServiceClone + Lifecycle {
     fn kind(&self) -> definition::ServiceKind;
     fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
     fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
