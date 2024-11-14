@@ -41,18 +41,21 @@ impl ServiceBuilder {
         self
     }
 
-    pub fn grpc<S>(mut self, svc: S) -> Self
+    pub fn grpc<S, B>(mut self, server: S, lifecycle: &Arc<Mutex<Box<B>>>) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
             + NamedService
-            + Lifecycle
             + Clone
             + Send
             + Sync
             + 'static,
         S::Future: Send + 'static,
+        B: Lifecycle
+            + Clone
+            + Send
+            + 'static,
     {
-        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new(svc)));
+        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new(server, lifecycle)));
         self
     }
 

@@ -203,15 +203,20 @@ impl Service {
         for s in &definitions.types {
             let svc = self.get_server(&s.0)?;
             svc.stop(&context).await;
-            svc.on_finish().await?;
         }
 
-        // Then stops our task runner
+        // Tells the main tasks to stop
         let _ = self.shutdown_tx.send(());
         self.logger.debug("sending shutdown signal for service tasks");
 
         for handle in &mut self.handles {
             let _ = handle.await;
+        }
+
+        // Then calls the callback to release service resources.
+        for s in &definitions.types {
+            let svc = self.get_server(&s.0)?;
+            svc.on_finish().await?;
         }
 
         self.logger.info("service stopped");

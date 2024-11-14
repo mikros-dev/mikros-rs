@@ -3,6 +3,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use futures::lock::Mutex;
 use http::{request::Request, response::Response};
 use logger::fields::FieldValue;
 use tokio::sync::watch;
@@ -17,62 +18,73 @@ use crate::grpc;
 use crate::service::lifecycle::Lifecycle;
 
 #[derive(Clone)]
-pub(crate) struct Grpc<S> {
+pub(crate) struct Grpc<S, B> {
     port: i32,
     server: S,
+    lifecycle: Arc<Mutex<Box<B>>>,
 }
 
-impl<S> Grpc<S>
+impl<S, B> Grpc<S, B>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
-        + Lifecycle
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: Send + 'static,
+    B: Lifecycle
+        + Clone
+        + Send
+        + 'static,
 {
-    pub(crate) fn new(svc: S) -> Self {
+    pub(crate) fn new(server: S, lifecycle: &Arc<Mutex<Box<B>>>) -> Self {
         Self {
             port: 0,
-            server: svc,
+            server,
+            lifecycle: lifecycle.clone(),
         }
     }
 }
 
 #[async_trait::async_trait]
-impl<S> Lifecycle for Grpc<S>
+impl<S, B> Lifecycle for Grpc<S, B>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
-        + Lifecycle
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: 'static + Send,
+    B: Lifecycle
+        + Clone
+        + Send
+        + 'static,
 {
     async fn on_start(&mut self) -> merrors::Result<()> {
-        self.server.on_start().await
+        self.lifecycle.lock().await.on_start().await
     }
 
     async fn on_finish(&self) -> merrors::Result<()> {
-        self.server.on_finish().await
+        self.lifecycle.lock().await.on_finish().await
     }
 }
 
 #[async_trait::async_trait]
-impl<S> plugin::service::Service for Grpc<S>
+impl<S, B> plugin::service::Service for Grpc<S, B>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
-        + Lifecycle
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: Send + 'static,
+    B: Lifecycle
+        + Clone
+        + Send
+        + 'static,
 {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Grpc
