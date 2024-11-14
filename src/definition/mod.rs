@@ -121,7 +121,7 @@ impl Definitions {
     }
 
     pub(crate) fn get_service_type(&self, kind: ServiceKind) -> merrors::Result<&service::Service> {
-        match self.types.iter().find(|t| t.0 == definition::ServiceKind::Grpc) {
+        match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
             None => Err(merrors::Error::NotFound(format!("could not find service kind '{}'", kind)))
         }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc};
 use std::convert::Infallible;
 
+use axum::Router;
 use futures::lock::Mutex;
 use http::{request::Request, response::Response};
 use tonic::body::BoxBody;
@@ -11,6 +12,7 @@ use crate::{definition, errors as merrors, plugin};
 use crate::service::native::{NativeService, Native};
 use crate::service::script::{ScriptService, Script};
 use crate::service::grpc::Grpc;
+use crate::service::http::Http;
 use crate::service::lifecycle::Lifecycle;
 use crate::service::Service;
 
@@ -43,7 +45,7 @@ impl ServiceBuilder {
         self
     }
 
-    /// Initializes the grpc service type with the required structure
+    /// Initializes the gRPC service type with the required structure
     /// implementing its API.
     pub fn grpc<S>(mut self, server: S) -> Self
     where
@@ -59,7 +61,7 @@ impl ServiceBuilder {
         self
     }
 
-    /// Initializes the grpc service type with the required structure
+    /// Initializes the gRPC service type with the required structure
     /// implementing its API and another with implementing the Lifecycle
     /// API.
     pub fn grpc_with_lifecycle<S, B: Lifecycle + 'static>(mut self, server: S, lifecycle: Arc<Mutex<B>>) -> Self
@@ -73,6 +75,21 @@ impl ServiceBuilder {
         S::Future: Send + 'static,
     {
         self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
+        self
+    }
+
+    /// Initializes the HTTP service type with the required structure
+    /// implementing the service endpoint handlers.
+    pub fn http(mut self, router: Router) -> Self {
+        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new(router)));
+        self
+    }
+
+    /// Initializes the HTTP service type with the required structure
+    /// implementing the service endpoint handlers and another with
+    /// implementing the Lifecycle API.
+    pub fn http_with_lifecycle<B: Lifecycle + 'static>(mut self, router: Router, lifecycle: Arc<Mutex<B>>) -> Self {
+        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
         self
     }
 

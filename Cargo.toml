@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.83"
+axum = "0.7.7"
 env-settings = "0.1.11"
 env-settings-derive = "0.1.11"
 env-settings-utils = "0.1.11"

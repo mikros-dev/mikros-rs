@@ -1,9 +1,10 @@
 pub mod builder;
 pub mod context;
 pub mod grpc;
+pub mod http;
+pub mod lifecycle;
 pub mod native;
 pub mod script;
-pub mod lifecycle;
 
 use std::collections::HashMap;
 use std::sync::Arc;

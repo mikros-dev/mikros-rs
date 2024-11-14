@@ -1,0 +1,10 @@
+[package]
+name = "http"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7.7"
+mikros = { path = "../../../" }
+tokio = { version = "1.41.1", features = ["full"] }
+tonic = "0.12.3"
