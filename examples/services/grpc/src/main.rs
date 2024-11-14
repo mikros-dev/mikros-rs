@@ -12,12 +12,14 @@ use helloworld::{HelloReply, HelloRequest};
 
 #[derive(Clone)]
 pub struct MyGreeter {
-    ctx: Arc<mikros::FutureMutex<Box<Context>>>
+    ctx: Box<Arc<mikros::FutureMutex<Context>>>
 }
 
 impl MyGreeter {
-    pub fn new(ctx: Arc<mikros::FutureMutex<Box<Context>>>) -> Self {
-        Self { ctx }
+    pub fn new(ctx: Arc<mikros::FutureMutex<Context>>) -> Self {
+        Self { 
+            ctx: Box::new(ctx)
+        }
     }
 }
 
@@ -60,12 +62,13 @@ impl lifecycle::Lifecycle for Context {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ctx = Arc::new(mikros::FutureMutex::new(Box::new(Context{ value: 0 })));
+    let ctx = Arc::new(mikros::FutureMutex::new(Context{ value: 0 }));
     let greeter = Arc::new(MyGreeter::new(ctx.clone()));
     let greeter_service = GreeterServer::from_arc(greeter);
 
     let svc = ServiceBuilder::default()
-        .grpc(greeter_service, &ctx)
+//        .grpc(greeter_service)
+        .grpc_with_lifecycle(greeter_service, ctx.clone())
         .build();
 
     match svc {

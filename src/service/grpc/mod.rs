@@ -18,13 +18,13 @@ use crate::grpc;
 use crate::service::lifecycle::Lifecycle;
 
 #[derive(Clone)]
-pub(crate) struct Grpc<S, B> {
+pub(crate) struct Grpc<S> {
     port: i32,
     server: S,
-    lifecycle: Arc<Mutex<Box<B>>>,
+    lifecycle: Option<Box<Arc<Mutex<dyn Lifecycle>>>>,
 }
 
-impl<S, B> Grpc<S, B>
+impl<S> Grpc<S>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
@@ -33,22 +33,26 @@ where
         + Sync
         + 'static,
     S::Future: Send + 'static,
-    B: Lifecycle
-        + Clone
-        + Send
-        + 'static,
 {
-    pub(crate) fn new(server: S, lifecycle: &Arc<Mutex<Box<B>>>) -> Self {
+    pub(crate) fn new_with_lifecycle<B: Lifecycle + 'static>(server: S, lifecycle: Arc<Mutex<B>>) -> Self {
         Self {
             port: 0,
             server,
-            lifecycle: lifecycle.clone(),
+            lifecycle: Some(Box::new(lifecycle)),
+        }
+    }
+
+    pub(crate) fn new(server: S) -> Self {
+        Self {
+            port: 0,
+            server,
+            lifecycle: None,
         }
     }
 }
 
 #[async_trait::async_trait]
-impl<S, B> Lifecycle for Grpc<S, B>
+impl<S> Lifecycle for Grpc<S>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
@@ -57,22 +61,26 @@ where
         + Sync
         + 'static,
     S::Future: 'static + Send,
-    B: Lifecycle
-        + Clone
-        + Send
-        + 'static,
 {
     async fn on_start(&mut self) -> merrors::Result<()> {
-        self.lifecycle.lock().await.on_start().await
+        if let Some(lifecycle) = &self.lifecycle {
+            return lifecycle.lock().await.on_start().await
+        }
+
+        Ok(())
     }
 
     async fn on_finish(&self) -> merrors::Result<()> {
-        self.lifecycle.lock().await.on_finish().await
+        if let Some(lifecycle) = &self.lifecycle {
+            return lifecycle.lock().await.on_finish().await
+        }
+
+        Ok(())
     }
 }
 
 #[async_trait::async_trait]
-impl<S, B> plugin::service::Service for Grpc<S, B>
+impl<S> plugin::service::Service for Grpc<S>
 where
     S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
         + NamedService
@@ -81,10 +89,6 @@ where
         + Sync
         + 'static,
     S::Future: Send + 'static,
-    B: Lifecycle
-        + Clone
-        + Send
-        + 'static,
 {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Grpc

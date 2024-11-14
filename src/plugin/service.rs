@@ -32,6 +32,6 @@ where
 
 impl Clone for Box<dyn Service> {
     fn clone(&self) -> Self {
-        self.clone_box()
+        ServiceClone::clone_box(self.as_ref())
     }
 }

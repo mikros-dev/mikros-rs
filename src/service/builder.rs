@@ -29,19 +29,23 @@ impl ServiceBuilder {
         }
     }
 
-    /// Sets the current service as a native type.
+    /// Initializes the native service type with the required structure
+    /// implementing its API.
     pub fn native<S: NativeService + 'static>(mut self, svc: Arc<Mutex<S>>) -> Self {
         self.servers.insert(definition::ServiceKind::Native.to_string(), Box::new(Native::new(svc)));
         self
     }
 
-    /// Sets the current service as a script type.
+    /// Initializes the script service type with the required structure
+    /// implementing its API.
     pub fn script<S: ScriptService + 'static>(mut self, svc: Arc<Mutex<S>>) -> Self {
         self.servers.insert(definition::ServiceKind::Script.to_string(), Box::new(Script::new(svc)));
         self
     }
 
-    pub fn grpc<S, B>(mut self, server: S, lifecycle: &Arc<Mutex<Box<B>>>) -> Self
+    /// Initializes the grpc service type with the required structure
+    /// implementing its API.
+    pub fn grpc<S>(mut self, server: S) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
             + NamedService
@@ -50,12 +54,25 @@ impl ServiceBuilder {
             + Sync
             + 'static,
         S::Future: Send + 'static,
-        B: Lifecycle
+    {
+        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new(server)));
+        self
+    }
+
+    /// Initializes the grpc service type with the required structure
+    /// implementing its API and another with implementing the Lifecycle
+    /// API.
+    pub fn grpc_with_lifecycle<S, B: Lifecycle + 'static>(mut self, server: S, lifecycle: Arc<Mutex<B>>) -> Self
+    where
+        S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+            + NamedService
             + Clone
             + Send
+            + Sync
             + 'static,
+        S::Future: Send + 'static,
     {
-        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new(server, lifecycle)));
+        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
         self
     }
 
