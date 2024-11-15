@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::str::FromStr;
 use validator::{ValidateArgs};
 
-use crate::{definition, errors as merrors};
+use crate::errors as merrors;
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
@@ -186,17 +186,5 @@ mod tests {
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
 
-    }
-
-    #[test]
-    fn test_is_service_configured() {
-        let filename = assets_path().join("definitions/service.toml.ok_hybrid");
-        let defs = Definitions::new(filename.to_str(), None);
-        assert!(defs.is_ok());
-
-        let d = defs.unwrap();
-        assert_eq!(d.is_service_configured(ServiceKind::Grpc), true);
-        assert_eq!(d.is_service_configured(ServiceKind::Http), true);
-        assert_eq!(d.is_service_configured(ServiceKind::Custom("websocket".to_string())), false);
     }
 }

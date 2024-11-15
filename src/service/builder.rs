@@ -9,6 +9,7 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
 use crate::{definition, errors as merrors, plugin};
+use crate::http::{ServiceInternalState, ServiceState};
 use crate::service::native::{NativeService, Native};
 use crate::service::script::{ScriptService, Script};
 use crate::service::grpc::Grpc;
@@ -80,7 +81,7 @@ impl ServiceBuilder {
 
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers.
-    pub fn http(mut self, router: Router) -> Self {
+    pub fn http(mut self, router: Router<Arc<ServiceState>>) -> Self {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new(router)));
         self
     }
@@ -88,8 +89,18 @@ impl ServiceBuilder {
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers and another with
     /// implementing the Lifecycle API.
-    pub fn http_with_lifecycle<B: Lifecycle + 'static>(mut self, router: Router, lifecycle: Arc<Mutex<B>>) -> Self {
+    pub fn http_with_lifecycle<L: Lifecycle + 'static>(mut self, router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
+        self
+    }
+
+    pub fn http_with_state<S: ServiceInternalState + 'static>(mut self, router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self {
+        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_state(router, state)));
+        self
+    }
+
+    pub fn http_with_lifecycle_and_state<L: Lifecycle + 'static, S: ServiceInternalState + 'static>(mut self, router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self {
+        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
         self
     }
 

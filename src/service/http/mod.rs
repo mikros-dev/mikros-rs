@@ -8,30 +8,52 @@ use tokio::net::TcpListener;
 use tokio::sync::watch::Receiver;
 
 use crate::{definition, env, errors as merrors, plugin};
+use crate::http::{ServiceInternalState, ServiceState};
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 
 #[derive(Clone)]
 pub(crate) struct Http {
     port: i32,
-    router: Router,
+    router: Router<Arc<ServiceState>>,
     lifecycle: Option<Box<Arc<Mutex<dyn Lifecycle>>>>,
+    internal_state: Option<Box<Arc<Mutex<dyn ServiceInternalState>>>>
 }
 
 impl Http {
-    pub fn new(router: Router) -> Self {
+    pub fn new(router: Router<Arc<ServiceState>>) -> Self {
         Self {
             port: 0,
             router,
             lifecycle: None,
+            internal_state: None
         }
     }
 
-    pub fn new_with_lifecycle<B: Lifecycle + 'static>(router: Router, lifecycle: Arc<Mutex<B>>) -> Self {
+    pub fn new_with_lifecycle<L: Lifecycle + 'static>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self {
         Self {
             port: 0,
             router,
             lifecycle: Some(Box::new(lifecycle)),
+            internal_state: None
+        }
+    }
+
+    pub fn new_with_state<S: ServiceInternalState + 'static>(router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self {
+        Self {
+            port: 0,
+            router,
+            lifecycle: None,
+            internal_state: Some(Box::new(state))
+        }
+    }
+
+    pub fn new_with_lifecycle_and_state<L: Lifecycle + 'static, S: ServiceInternalState + 'static>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self {
+        Self {
+            port: 0,
+            router,
+            lifecycle: Some(Box::new(lifecycle)),
+            internal_state: Some(Box::new(state))
         }
     }
 }
@@ -87,8 +109,12 @@ impl plugin::service::Service for Http {
             shutdown_rx.changed().await.ok();
         };
 
-        let shared_ctx = Arc::new(ctx.clone());
-        let app = Router::new().with_state(shared_ctx).merge(self.router.clone());
+        let state = match &self.internal_state {
+            None => ServiceState::new(ctx),
+            Some(st) => ServiceState::new_with_state(ctx, st)
+        };
+
+        let app = Router::new().merge(self.router.clone()).with_state(Arc::new(state));
 
         match TcpListener::bind(addr).await {
             Ok(incoming) => {
