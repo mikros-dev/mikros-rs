@@ -30,31 +30,33 @@ impl Http {
         }
     }
 
-    pub fn new_with_lifecycle<L: Lifecycle + 'static>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self {
-        Self {
-            port: 0,
-            router,
-            lifecycle: Some(Box::new(lifecycle)),
-            internal_state: None
-        }
+    pub fn new_with_lifecycle<L>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self
+    where
+        L: Lifecycle + 'static,
+    {
+        let mut s = Self::new(router);
+        s.lifecycle = Some(Box::new(lifecycle));
+        s
     }
 
-    pub fn new_with_state<S: ServiceInternalState + 'static>(router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self {
-        Self {
-            port: 0,
-            router,
-            lifecycle: None,
-            internal_state: Some(Box::new(state))
-        }
+    pub fn new_with_state<S>(router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self
+    where
+        S: ServiceInternalState + 'static,
+    {
+        let mut s = Self::new(router);
+        s.internal_state = Some(Box::new(state));
+        s
     }
 
-    pub fn new_with_lifecycle_and_state<L: Lifecycle + 'static, S: ServiceInternalState + 'static>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self {
-        Self {
-            port: 0,
-            router,
-            lifecycle: Some(Box::new(lifecycle)),
-            internal_state: Some(Box::new(state))
-        }
+    pub fn new_with_lifecycle_and_state<L, S>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self
+    where
+        L: Lifecycle + 'static,
+        S: ServiceInternalState + 'static
+    {
+        let mut s = Self::new(router);
+        s.lifecycle = Some(Box::new(lifecycle));
+        s.internal_state = Some(Box::new(state));
+        s
     }
 }
 

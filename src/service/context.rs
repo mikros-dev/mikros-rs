@@ -49,6 +49,9 @@ impl Context {
 }
 
 /// Retrieves the mikros Context from an RPC request argument.
-pub fn from_request<B: prost::Message>(request: &tonic::Request<B>) -> Arc<Context> {
+pub fn from_request<B>(request: &tonic::Request<B>) -> Arc<Context>
+where
+    B: prost::Message,
+{
     request.extensions().get::<Arc<Context>>().unwrap().clone()
 }
