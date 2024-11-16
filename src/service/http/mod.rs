@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::Router;
@@ -15,22 +16,22 @@ use crate::service::lifecycle::Lifecycle;
 #[derive(Clone)]
 pub(crate) struct Http {
     port: i32,
-    router: Router<Arc<ServiceState>>,
+    router: Router<Arc<Mutex<ServiceState>>>,
     lifecycle: Option<Box<Arc<Mutex<dyn Lifecycle>>>>,
-    internal_state: Option<Box<Arc<Mutex<dyn ServiceInternalState>>>>
+    internal_state: Arc<Mutex<Option<Box<dyn ServiceInternalState>>>>
 }
 
 impl Http {
-    pub fn new(router: Router<Arc<ServiceState>>) -> Self {
+    pub fn new(router: Router<Arc<Mutex<ServiceState>>>) -> Self {
         Self {
             port: 0,
             router,
             lifecycle: None,
-            internal_state: None
+            internal_state: Arc::new(Mutex::new(None))
         }
     }
 
-    pub fn new_with_lifecycle<L>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self
+    pub fn new_with_lifecycle<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>) -> Self
     where
         L: Lifecycle + 'static,
     {
@@ -39,23 +40,19 @@ impl Http {
         s
     }
 
-    pub fn new_with_state<S>(router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self
-    where
-        S: ServiceInternalState + 'static,
-    {
+    pub fn new_with_state(router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn ServiceInternalState>) -> Self {
         let mut s = Self::new(router);
-        s.internal_state = Some(Box::new(state));
+        s.internal_state = Arc::new(Mutex::new(Some(state)));
         s
     }
 
-    pub fn new_with_lifecycle_and_state<L, S>(router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self
+    pub fn new_with_lifecycle_and_state<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn ServiceInternalState>) -> Self
     where
         L: Lifecycle + 'static,
-        S: ServiceInternalState + 'static
     {
         let mut s = Self::new(router);
         s.lifecycle = Some(Box::new(lifecycle));
-        s.internal_state = Some(Box::new(state));
+        s.internal_state = Arc::new(Mutex::new(Some(state)));
         s
     }
 }
@@ -111,12 +108,13 @@ impl plugin::service::Service for Http {
             shutdown_rx.changed().await.ok();
         };
 
-        let state = match &self.internal_state {
+        let internal_state = self.internal_state.clone();
+        let state = match internal_state.lock().await.deref() {
             None => ServiceState::new(ctx),
-            Some(st) => ServiceState::new_with_state(ctx, st)
+            Some(state) => ServiceState::new_with_state(ctx, state.clone_box())
         };
 
-        let app = Router::new().merge(self.router.clone()).with_state(Arc::new(state));
+        let app = Router::new().merge(self.router.clone()).with_state(Arc::new(Mutex::new(state)));
 
         match TcpListener::bind(addr).await {
             Ok(incoming) => {

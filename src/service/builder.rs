@@ -88,7 +88,7 @@ impl ServiceBuilder {
 
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers.
-    pub fn http(mut self, router: Router<Arc<ServiceState>>) -> Self {
+    pub fn http(mut self, router: Router<Arc<Mutex<ServiceState>>>) -> Self {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new(router)));
         self
     }
@@ -96,7 +96,7 @@ impl ServiceBuilder {
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers and another with
     /// implementing the Lifecycle API.
-    pub fn http_with_lifecycle<L>(mut self, router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>) -> Self
+    pub fn http_with_lifecycle<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>) -> Self
     where
         L: Lifecycle + 'static
     {
@@ -104,18 +104,14 @@ impl ServiceBuilder {
         self
     }
 
-    pub fn http_with_state<S>(mut self, router: Router<Arc<ServiceState>>, state: Arc<Mutex<S>>) -> Self
-    where
-        S: ServiceInternalState + 'static,
-    {
+    pub fn http_with_state(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn ServiceInternalState>) -> Self {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_state(router, state)));
         self
     }
 
-    pub fn http_with_lifecycle_and_state<L, S>(mut self, router: Router<Arc<ServiceState>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self
+    pub fn http_with_lifecycle_and_state<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn ServiceInternalState>) -> Self
     where
         L: Lifecycle + 'static,
-        S: ServiceInternalState + 'static,
     {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
         self

@@ -1,29 +1,28 @@
+use std::any::Any;
 use std::sync::Arc;
 
 use futures::lock::Mutex;
 
 use crate::service::context::Context;
 
-pub trait ServiceInternalState: Send + 'static {}
-
 #[derive(Clone)]
 pub struct ServiceState {
     context: Arc<Context>,
-    state: Option<Box<Arc<Mutex<dyn ServiceInternalState>>>>
+    state: Arc<Mutex<Option<Box<dyn ServiceInternalState>>>>
 }
 
 impl ServiceState {
-    pub(crate) fn new(context: &Context) -> ServiceState {
+    pub(crate) fn new(context: &Context) -> Self {
         Self {
             context: Arc::new(context.clone()),
-            state: None
+            state: Arc::new(Mutex::new(None)),
         }
     }
 
-    pub(crate) fn new_with_state(context: &Context, state: &Box<Arc<Mutex<dyn ServiceInternalState>>>) -> ServiceState {
+    pub(crate) fn new_with_state(context: &Context, state: Box<dyn ServiceInternalState>) -> Self {
         Self {
             context: Arc::new(context.clone()),
-            state: Some(state.clone())
+            state: Arc::new(Mutex::new(Some(state))),
         }
     }
 
@@ -31,7 +30,19 @@ impl ServiceState {
         self.context.clone()
     }
 
-    pub fn state(&self) -> Option<Box<Arc<Mutex<dyn ServiceInternalState>>>> {
-        self.state.clone()
+    pub async fn state<T: Clone + 'static>(&self) -> Option<Arc<T>> {
+        let state = self.state.lock().await;
+        state.as_ref()?.as_any().downcast_ref::<T>().map(|t|Arc::new(t.clone()))
+    }
+}
+
+pub trait ServiceInternalState: Send + Sync + 'static {
+    fn clone_box(&self) -> Box<dyn ServiceInternalState>;
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl Clone for Box<dyn ServiceInternalState> {
+    fn clone(&self) -> Self {
+        self.clone_box()
     }
 }
