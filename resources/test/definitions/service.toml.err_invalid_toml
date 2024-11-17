@@ -1,0 +1,5 @@
+name = "my-service
+types = ["native"]
+version = "v1.0.0"
+language = "rust"
+product = "incredible-product"

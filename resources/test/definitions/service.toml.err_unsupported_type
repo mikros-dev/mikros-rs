@@ -1,0 +1,5 @@
+name = "my-service"
+types = ["websocket"]
+version = "v1.0.0"
+language = "python"
+product = "my-product"

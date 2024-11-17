@@ -1,0 +1,6 @@
+name = "my-hybrid-service"
+types = ["grpc", "http"]
+version = "v1.0.0"
+language = "rust"
+product = "incredible-product"
+envs = ["CUSTOM_PATH", "IMPORTANT_URL"]
