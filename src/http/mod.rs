@@ -8,41 +8,55 @@ use crate::service::context::Context;
 #[derive(Clone)]
 pub struct ServiceState {
     context: Arc<Context>,
-    state: Arc<Mutex<Option<Box<dyn ServiceInternalState>>>>
+
+    /// This member gives access to the service own state (added when it is
+    /// created, with the ServiceBuilder::http_with_state API).
+    ///
+    /// One can retrieve the proper service state structure like the example:
+    ///
+    /// ```
+    /// use std::sync::Arc;
+    ///
+    /// use axum::extract::State;
+    /// use mikros::FutureMutex;
+    /// use mikros::http::ServiceState;
+    ///
+    /// #[derive(Clone)]
+    /// pub struct AppState;
+    ///
+    /// async fn handler(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
+    ///     if let Some(app_state) = &state.lock().await.app_state {
+    ///         let mut locked = app_state.as_ref().lock().await;
+    ///         let svc_state = locked.downcast_mut::<AppState>().unwrap();
+    ///
+    ///         // svc_state can be manipulated from here.
+    ///     }
+    ///
+    ///     "Ok".to_string()
+    /// }
+    /// ```
+    ///
+    pub app_state: Option<Arc<Mutex<Box<dyn Any + Send + Sync>>>>,
 }
 
 impl ServiceState {
     pub(crate) fn new(context: &Context) -> Self {
         Self {
             context: Arc::new(context.clone()),
-            state: Arc::new(Mutex::new(None)),
+            app_state: None,
         }
     }
 
-    pub(crate) fn new_with_state(context: &Context, state: Box<dyn ServiceInternalState>) -> Self {
-        Self {
-            context: Arc::new(context.clone()),
-            state: Arc::new(Mutex::new(Some(state))),
-        }
+    pub(crate) fn new_with_state(context: &Context, internal_state: Arc<Mutex<Box<dyn Any + Send + Sync>>>) -> Self {
+        let mut s = Self::new(context);
+        s.app_state = Some(internal_state);
+        s
     }
 
+    /// Allows retrieving the mikros Context object from a handler state. Even
+    /// if the service was not initialized with state, the context will always
+    /// be available.
     pub fn context(&self) -> Arc<Context> {
         self.context.clone()
-    }
-
-    pub async fn state<T: Clone + 'static>(&self) -> Option<Arc<T>> {
-        let state = self.state.lock().await;
-        state.as_ref()?.as_any().downcast_ref::<T>().map(|t|Arc::new(t.clone()))
-    }
-}
-
-pub trait ServiceInternalState: Send + Sync + 'static {
-    fn clone_box(&self) -> Box<dyn ServiceInternalState>;
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl Clone for Box<dyn ServiceInternalState> {
-    fn clone(&self) -> Self {
-        self.clone_box()
     }
 }

@@ -1,12 +1,10 @@
-use std::any::Any;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::routing::get;
 use mikros::FutureMutex;
-use mikros::http::{ServiceInternalState, ServiceState};
+use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
-//use mikros::FutureMutex;
 
 #[derive(Clone, Default)]
 pub struct AppState {
@@ -19,18 +17,7 @@ impl AppState {
     }
 }
 
-impl ServiceInternalState for AppState {
-    fn clone_box(&self) -> Box<dyn ServiceInternalState> {
-        Box::new(self.clone())
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 // Handler method for the first endpoint
-//async fn handler_one(ctx: Option<State<Arc<Context>>>) -> String {
 async fn handler_one(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
     println!("Handler One");
     let context = state.lock().await.context();
@@ -43,11 +30,12 @@ async fn handler_one(State(state): State<Arc<FutureMutex<ServiceState>>>) -> Str
 async fn handler_two(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
     println!("Handler Two");
 
-    if let Some(app_state) = state.lock().await.state::<AppState>().await {
-        println!("App State current value: {}", app_state.value);
-        app_state.increase();
-        let mut x = app_state.clone_box();
-        x.in
+    let context = state.lock().await.context();
+    if let Some(app_state) = &state.lock().await.app_state {
+        let mut locked = app_state.as_ref().lock().await;
+        let x = locked.downcast_mut::<AppState>().unwrap();
+        x.value += 1;
+        context.logger().info(format!("value: {}", x.value).as_str());
     }
 
     format!("Handler Two")
@@ -62,7 +50,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState::default();
     let svc = ServiceBuilder::default()
         .http_with_state(api, Box::new(state))
-//        .http_with_state(api, Arc::new(FutureMutex::new(state)))
 //        .http(api)
         .build();
 

@@ -1,6 +1,7 @@
+use std::any::Any;
 use std::collections::HashMap;
-use std::sync::{Arc};
 use std::convert::Infallible;
+use std::sync::Arc;
 
 use axum::Router;
 use futures::lock::Mutex;
@@ -8,15 +9,18 @@ use http::{request::Request, response::Response};
 use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
-use crate::{definition, errors as merrors, plugin};
-use crate::http::{ServiceInternalState, ServiceState};
-use crate::service::native::{NativeService, Native};
-use crate::service::script::{ScriptService, Script};
+use crate::http::ServiceState;
+use crate::service::Service;
 use crate::service::grpc::Grpc;
 use crate::service::http::Http;
 use crate::service::lifecycle::Lifecycle;
-use crate::service::Service;
+use crate::service::native::{NativeService, Native};
+use crate::service::script::{ScriptService, Script};
+use crate::{definition, errors as merrors, plugin};
 
+/// The builder API to build a mikros service instance. It allows to initialize
+/// each type of configured service (inside the service.toml file) with its own
+/// data type.
 pub struct ServiceBuilder {
     pub(crate) servers: HashMap<String, Box<dyn plugin::service::Service>>,
     pub(crate) features: Vec<Box<dyn plugin::feature::Feature>>,
@@ -104,12 +108,19 @@ impl ServiceBuilder {
         self
     }
 
-    pub fn http_with_state(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn ServiceInternalState>) -> Self {
+    /// Initializes the HTTP service type with the required structure
+    /// implementing the service endpoint handlers. It also receives an
+    /// object that will be passed inside the handlers state.
+    pub fn http_with_state(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn Any + Send + Sync>) -> Self {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_state(router, state)));
         self
     }
 
-    pub fn http_with_lifecycle_and_state<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn ServiceInternalState>) -> Self
+    /// Initializes the HTTP service type with the required structure
+    /// implementing the service endpoint handlers and another with
+    /// implementing the Lifecycle API. It also receives an object that
+    /// will be passed inside the handlers state.
+    pub fn http_with_lifecycle_and_state<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn Any + Send + Sync>) -> Self
     where
         L: Lifecycle + 'static,
     {
