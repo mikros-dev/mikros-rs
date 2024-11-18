@@ -5,7 +5,7 @@ pub mod helloworld {
 }
 
 use mikros::features;
-use mikros::service::{builder::ServiceBuilder, context};
+use mikros::service::{builder::ServiceBuilder, context, lifecycle};
 use tonic::{Request, Response, Status};
 
 use helloworld::greeter_server::{Greeter, GreeterServer};
@@ -51,13 +51,29 @@ pub struct Context {
     value: i32,
 }
 
+#[tonic::async_trait]
+impl lifecycle::Lifecycle for Context {
+    async fn on_start(&mut self) -> mikros::errors::Result<()> {
+        println!("grpc on_start called");
+        self.value = 42;
+        Ok(())
+    }
+
+    async fn on_finish(&self) -> mikros::errors::Result<()> {
+        println!("grpc on_finish called");
+        Ok(())
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = Arc::new(mikros::FutureMutex::new(Context { value: 0 }));
     let greeter = Arc::new(MyGreeter::new(ctx.clone()));
     let greeter_service = GreeterServer::from_arc(greeter);
 
-    let svc = ServiceBuilder::default().grpc(greeter_service).build();
+    let svc = ServiceBuilder::default()
+        .grpc_with_lifecycle(greeter_service, ctx.clone())
+        .build();
 
     match svc {
         Ok(mut svc) => {

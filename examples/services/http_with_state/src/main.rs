@@ -5,9 +5,21 @@ use axum::routing::get;
 use futures::lock::Mutex;
 use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
+use mikros::FutureMutex;
+
+#[derive(Clone, Default)]
+pub struct AppState {
+    value: i32,
+}
+
+impl AppState {
+    pub fn increase(&mut self) {
+        self.value += 1;
+    }
+}
 
 // Handler method for the first endpoint
-async fn handler_one(State(state): State<Arc<Mutex<ServiceState>>>) -> String {
+async fn handler_one(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
     println!("Handler One");
     let context = state.lock().await.context();
     context.logger().info("just a log message");
@@ -16,8 +28,19 @@ async fn handler_one(State(state): State<Arc<Mutex<ServiceState>>>) -> String {
 }
 
 // Handler method for the second endpoint
-async fn handler_two(State(_): State<Arc<Mutex<ServiceState>>>) -> String {
+async fn handler_two(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
     println!("Handler Two");
+
+    let context = state.lock().await.context();
+    if let Some(app_state) = &state.lock().await.app_state {
+        let mut locked = app_state.as_ref().lock().await;
+        let x = locked.downcast_mut::<AppState>().unwrap();
+        x.value += 1;
+        context
+            .logger()
+            .info(format!("value: {}", x.value).as_str());
+    }
+
     format!("Handler Two")
 }
 
@@ -27,7 +50,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/one", get(handler_one))
         .route("/two", get(handler_two));
 
-    let svc = ServiceBuilder::default().http(api).build();
+    let state = Arc::new(Mutex::new(AppState::default()));
+    let svc = ServiceBuilder::default()
+        .http_with_state(api, state.clone())
+        .build();
 
     match svc {
         Ok(mut svc) => {
