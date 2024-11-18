@@ -21,7 +21,7 @@ use crate::service::lifecycle::Lifecycle;
 pub(crate) struct Grpc<S> {
     port: i32,
     server: S,
-    lifecycle: Option<Box<Arc<Mutex<dyn Lifecycle>>>>,
+    lifecycle: Option<Arc<Mutex<dyn Lifecycle>>>,
 }
 
 impl<S> Grpc<S>
@@ -34,11 +34,11 @@ where
         + 'static,
     S::Future: Send + 'static,
 {
-    pub(crate) fn new_with_lifecycle<B: Lifecycle + 'static>(server: S, lifecycle: Arc<Mutex<B>>) -> Self {
+    pub(crate) fn new_with_lifecycle<L: Lifecycle + 'static>(server: S, lifecycle: Arc<Mutex<L>>) -> Self {
         Self {
             port: 0,
             server,
-            lifecycle: Some(Box::new(lifecycle)),
+            lifecycle: Some(lifecycle.clone()),
         }
     }
 

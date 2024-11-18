@@ -1,13 +1,13 @@
 use std::collections::HashMap;
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use futures::lock::Mutex;
 use logger::fields::FieldValue;
 use tokio::sync::watch;
 
-use crate::{definition, env, errors as merrors, plugin};
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
+use crate::{definition, env, errors as merrors, plugin};
 
 #[async_trait::async_trait]
 pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
@@ -43,13 +43,13 @@ impl Clone for Box<dyn NativeService> {
 
 #[derive(Clone)]
 pub(crate) struct Native {
-    svc: Box<Arc<Mutex<dyn NativeService>>>,
+    svc: Arc<Mutex<Box<dyn NativeService>>>,
 }
 
 impl Native {
-    pub fn new<S: NativeService + 'static>(svc: Arc<Mutex<S>>) -> Self {
+    pub fn new(svc: Box<dyn NativeService>) -> Self {
         Self {
-            svc: Box::new(svc),
+            svc: Arc::new(Mutex::new(svc)),
         }
     }
 }

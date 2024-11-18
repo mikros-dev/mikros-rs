@@ -12,13 +12,13 @@ use helloworld::{HelloReply, HelloRequest};
 
 #[derive(Clone)]
 pub struct MyGreeter {
-    ctx: Box<Arc<mikros::FutureMutex<Context>>>
+    ctx: Arc<mikros::FutureMutex<Context>>
 }
 
 impl MyGreeter {
     pub fn new(ctx: Arc<mikros::FutureMutex<Context>>) -> Self {
         Self { 
-            ctx: Box::new(ctx)
+            ctx: ctx.clone()
         }
     }
 }
@@ -38,6 +38,7 @@ impl Greeter for MyGreeter {
             message: format!("Hello, {}!", request.into_inner().name),
         };
 
+        self.ctx.lock().await.value += 1;
         Ok(Response::new(reply))
     }
 }

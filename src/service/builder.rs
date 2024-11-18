@@ -38,20 +38,14 @@ impl ServiceBuilder {
 
     /// Initializes the native service type with the required structure
     /// implementing its API.
-    pub fn native<S>(mut self, svc: Arc<Mutex<S>>) -> Self
-    where
-        S: NativeService + 'static
-    {
+    pub fn native(mut self, svc: Box<dyn NativeService>) -> Self {
         self.servers.insert(definition::ServiceKind::Native.to_string(), Box::new(Native::new(svc)));
         self
     }
 
     /// Initializes the script service type with the required structure
     /// implementing its API.
-    pub fn script<S>(mut self, svc: Arc<Mutex<S>>) -> Self
-    where
-        S: ScriptService + 'static
-    {
+    pub fn script(mut self, svc: Box<dyn ScriptService>) -> Self {
         self.servers.insert(definition::ServiceKind::Script.to_string(), Box::new(Script::new(svc)));
         self
     }
@@ -75,7 +69,7 @@ impl ServiceBuilder {
     /// Initializes the gRPC service type with the required structure
     /// implementing its API and another with implementing the Lifecycle
     /// API.
-    pub fn grpc_with_lifecycle<S, B>(mut self, server: S, lifecycle: Arc<Mutex<B>>) -> Self
+    pub fn grpc_with_lifecycle<S, L>(mut self, server: S, lifecycle: Arc<Mutex<L>>) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
             + NamedService
@@ -84,7 +78,7 @@ impl ServiceBuilder {
             + Sync
             + 'static,
         S::Future: Send + 'static,
-        B: Lifecycle + 'static
+        L: Lifecycle + 'static
     {
         self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
         self
@@ -111,7 +105,10 @@ impl ServiceBuilder {
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers. It also receives an
     /// object that will be passed inside the handlers state.
-    pub fn http_with_state(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn Any + Send + Sync>) -> Self {
+    pub fn http_with_state<S>(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Arc<Mutex<S>>) -> Self
+    where
+        S: Any + Send + Sync
+    {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_state(router, state)));
         self
     }
@@ -120,9 +117,10 @@ impl ServiceBuilder {
     /// implementing the service endpoint handlers and another with
     /// implementing the Lifecycle API. It also receives an object that
     /// will be passed inside the handlers state.
-    pub fn http_with_lifecycle_and_state<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn Any + Send + Sync>) -> Self
+    pub fn http_with_lifecycle_and_state<L, S>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self
     where
         L: Lifecycle + 'static,
+        S: Any + Send + Sync
     {
         self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
         self

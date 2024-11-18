@@ -17,8 +17,8 @@ use crate::{definition, env, errors as merrors, plugin};
 pub(crate) struct Http {
     port: i32,
     router: Router<Arc<Mutex<ServiceState>>>,
-    lifecycle: Option<Box<Arc<Mutex<dyn Lifecycle>>>>,
-    app_state: Option<Arc<Mutex<Box<dyn Any + Send + Sync>>>>,
+    lifecycle: Option<Arc<Mutex<dyn Lifecycle>>>,
+    app_state: Option<Arc<Mutex<dyn Any + Send + Sync>>>,
 }
 
 impl Http {
@@ -36,23 +36,23 @@ impl Http {
         L: Lifecycle + 'static,
     {
         let mut s = Self::new(router);
-        s.lifecycle = Some(Box::new(lifecycle));
+        s.lifecycle = Some(lifecycle.clone());
         s
     }
 
-    pub fn new_with_state(router: Router<Arc<Mutex<ServiceState>>>, state: Box<dyn Any + Send + Sync>) -> Self {
+    pub fn new_with_state(router: Router<Arc<Mutex<ServiceState>>>, state: Arc<Mutex<dyn Any + Send + Sync>>) -> Self {
         let mut s = Self::new(router);
-        s.app_state = Some(Arc::new(Mutex::new(state)));
+        s.app_state = Some(state.clone());
         s
     }
 
-    pub fn new_with_lifecycle_and_state<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Box<dyn Any + Send + Sync>) -> Self
+    pub fn new_with_lifecycle_and_state<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<dyn Any + Send + Sync>>) -> Self
     where
         L: Lifecycle + 'static,
     {
         let mut s = Self::new(router);
-        s.lifecycle = Some(Box::new(lifecycle));
-        s.app_state = Some(Arc::new(Mutex::new(state)));
+        s.lifecycle = Some(lifecycle.clone());
+        s.app_state = Some(state.clone());
         s
     }
 }

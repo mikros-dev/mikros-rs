@@ -1,10 +1,13 @@
+use std::any::Any;
 use std::sync::Arc;
 
 use axum::extract::State;
 use axum::routing::get;
+use futures::lock::Mutex;
 use mikros::FutureMutex;
 use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
+use mikros::service::lifecycle::Lifecycle;
 
 #[derive(Clone, Default)]
 pub struct AppState {
@@ -14,6 +17,39 @@ pub struct AppState {
 impl AppState {
     pub fn increase(&mut self) {
         self.value += 1;
+    }
+}
+
+#[async_trait::async_trait]
+impl Lifecycle for AppState {
+    async fn on_start(&mut self) -> mikros::errors::Result<()> {
+        println!("service on_start");
+        self.value = 42;
+        Ok(())
+    }
+
+    async fn on_finish(&self) -> mikros::errors::Result<()> {
+        println!("service on_finish");
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct AppLifecycle {
+    state: Arc<Mutex<dyn Any + Send + Sync>>,
+}
+
+#[async_trait::async_trait]
+impl Lifecycle for AppLifecycle {
+    async fn on_start(&mut self) -> mikros::errors::Result<()> {
+        println!("service on_start");
+        self.state.lock().await.downcast_mut::<AppState>().unwrap().value = 42;
+        Ok(())
+    }
+    
+    async fn on_finish(&self) -> mikros::errors::Result<()> {
+        println!("service on_finish");
+        Ok(())
     }
 }
 
@@ -47,9 +83,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/one", get(handler_one))
         .route("/two", get(handler_two));
 
-    let state = AppState::default();
+    //let state = Arc::new(Mutex::new(Box::new(AppState::default()) as Box<dyn Any + Send + Sync>));
+    let state = Arc::new(Mutex::new(AppState::default()));
+//    let lifecycle = Arc::new(Mutex::new(AppLifecycle { state: state.clone(), }));
+
     let svc = ServiceBuilder::default()
-        .http_with_state(api, Box::new(state))
+        //.http_with_lifecycle_and_state(api, lifecycle.clone(), state.clone())
+        .http_with_lifecycle_and_state(api, state.clone(), state.clone())
+//        .http_with_lifecycle(api, Box::new(state))
+//        .http_with_state(api, Box::new(state))
 //        .http(api)
         .build();
 
