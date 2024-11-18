@@ -36,13 +36,13 @@ impl Clone for Box<dyn ScriptService> {
 
 #[derive(Clone)]
 pub(crate) struct Script {
-    svc: Box<Arc<Mutex<dyn ScriptService>>>,
+    svc: Arc<Mutex<Box<dyn ScriptService>>>,
 }
 
 impl Script {
-    pub fn new<S: ScriptService + 'static>(svc: Arc<Mutex<S>>) -> Self {
+    pub fn new(svc: Box<dyn ScriptService>) -> Self {
         Self {
-            svc: Box::new(svc),
+            svc: Arc::new(Mutex::new(svc)),
         }
     }
 }
