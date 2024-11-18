@@ -18,7 +18,6 @@ pub(crate) struct Http {
     port: i32,
     router: Router<Arc<Mutex<ServiceState>>>,
     lifecycle: Option<Arc<Mutex<dyn Lifecycle>>>,
-    //app_state: Option<Arc<Mutex<Box<dyn Any + Send + Sync>>>>,
     app_state: Option<Arc<Mutex<dyn Any + Send + Sync>>>,
 }
 

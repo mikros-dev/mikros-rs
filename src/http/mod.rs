@@ -36,7 +36,6 @@ pub struct ServiceState {
     /// }
     /// ```
     ///
-    //pub app_state: Option<Arc<Mutex<Box<dyn Any + Send + Sync>>>>,
     pub app_state: Option<Arc<Mutex<dyn Any + Send + Sync>>>,
 }
 
