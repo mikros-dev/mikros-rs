@@ -1,5 +1,11 @@
 use std::any::Any;
+use std::collections::HashMap;
+use std::sync::Arc;
 
+use logger::fields::FieldValue;
+
+use crate::definition::Definitions;
+use crate::env::Env;
 use crate::errors as merrors;
 use crate::plugin;
 use crate::service::context::Context;
@@ -11,13 +17,13 @@ pub trait ExampleAPI {
 
 /// Retrieves the feature API to be used inside a service and, if found, calls
 /// a closure over with.
-pub fn retrieve(ctx: &Context, f: impl FnOnce(&dyn ExampleAPI)) -> merrors::Result<()> {
-    let name = "example";
+pub async fn retrieve(ctx: &Context, f: impl FnOnce(&dyn ExampleAPI)) -> merrors::Result<()> {
+    let name = "simple_api";
 
-    match ctx.features.lock().unwrap().iter().find(|f| f.name() == name) {
+    match ctx.feature(name).await {
         None => Err(merrors::Error::FeatureNotFound(name.to_string())),
         Some(feature) => {
-            if let Some(api) = retrieve_example_api(feature) {
+            if let Some(api) = retrieve_example_api(&feature) {
                 f(api);
             }
 
@@ -33,21 +39,34 @@ fn retrieve_example_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&
 #[derive(Clone, Default)]
 pub(crate) struct Example;
 
+#[async_trait::async_trait]
 impl plugin::feature::Feature for Example {
     fn name(&self) -> &str {
         "example"
     }
 
+    fn info(&self) -> HashMap<String, FieldValue> {
+        logger::fields![
+            "test" => FieldValue::String("Hello world".to_string()),
+        ]
+    }
+
     fn is_enabled(&self) -> bool {
-        todo!()
+        true
     }
 
-    fn can_be_initialized(&self) -> bool {
-        todo!()
+    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> merrors::Result<bool> {
+        println!("example can_be_initialized");
+        Ok(true)
     }
 
-    fn initialize(&mut self) {
-        todo!()
+    async fn initialize(&mut self, _ctx: &Context) -> merrors::Result<()> {
+        println!("example initialized");
+        Ok(())
+    }
+
+    async fn cleanup(&self) {
+        println!("example cleanup");
     }
 
     fn service_api(&self) -> Option<&dyn Any> {

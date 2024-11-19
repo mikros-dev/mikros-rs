@@ -2,9 +2,12 @@ pub mod service;
 mod validation;
 
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::str::FromStr;
+
+use serde::de::DeserializeOwned;
 use validator::{ValidateArgs};
 
 use crate::errors as merrors;
@@ -21,6 +24,8 @@ pub struct Definitions {
     pub product: String,
     pub envs: Option<Vec<String>>,
     pub log: Option<Log>,
+
+    features: Option<HashMap<String, serde_json::Value>>,
 
     #[serde(deserialize_with = "service::deserialize_services")]
     pub types: Vec<service::Service>,
@@ -124,6 +129,27 @@ impl Definitions {
         match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
             None => Err(merrors::Error::NotFound(format!("could not find service kind '{}'", kind)))
+        }
+    }
+
+    pub fn load_feature<T>(&self, feature: &str) -> merrors::Result<Option<T>>
+    where
+        T: DeserializeOwned,
+    {
+        if let Some(d) = self.feature(feature) {
+            return match serde_json::from_value::<T>(d.clone()) {
+                Err(e) => Err(merrors::Error::LoadFeatureDefinition(feature.to_string(), e.to_string())),
+                Ok(defs) => Ok(Some(defs)),
+            }
+        }
+
+        Ok(None)
+    }
+
+    fn feature(&self, feature: &str) -> Option<serde_json::Value> {
+        match &self.features {
+            None => None,
+            Some(features) => features.get(feature).cloned()
         }
     }
 }
