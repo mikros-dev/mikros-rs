@@ -132,6 +132,7 @@ impl Definitions {
         }
     }
 
+    /// Loads definitions from a feature.
     pub fn load_feature<T>(&self, feature: &str) -> merrors::Result<Option<T>>
     where
         T: DeserializeOwned,

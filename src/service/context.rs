@@ -38,7 +38,7 @@ impl Context {
         self.logger.clone()
     }
 
-    /// Gives the service access to a reference from the current logger, so it
+    /// Gives the service access to a reference of the current logger, so it
     /// can display messages using the same format.
     pub fn logger_ref(&self) -> &logger::Logger {
         &self.logger
@@ -50,10 +50,14 @@ impl Context {
         self.envs.get_defined_env(name)
     }
 
+    /// Gives the service access to the service definitions loaded from the
+    /// service.toml file.
     pub fn definitions(&self) -> Arc<Definitions> {
         self.definitions.clone()
     }
 
+    /// Gives the service access to a reference of the service definitions loaded
+    /// from the service.toml file.
     pub fn definitions_ref(&self) -> &Definitions {
         &self.definitions
     }
@@ -63,8 +67,12 @@ impl Context {
         self.definitions.name.clone()
     }
 
-    pub async fn feature(&self, name: &str) -> Option<Box<dyn plugin::feature::Feature>> {
-        self.features.lock().await.iter().find(|f| f.name() == name).cloned()
+    /// On success, returns the feature found inside the context.
+    pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
+        match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
+            None => Err(merrors::Error::FeatureNotFound(name.to_string())),
+            Some(f) => Ok(f),
+        }
     }
 
     pub(crate) async fn initialize_features(&mut self) -> merrors::Result<()> {

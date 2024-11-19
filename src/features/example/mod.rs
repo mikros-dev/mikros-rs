@@ -17,22 +17,19 @@ pub trait ExampleAPI {
 
 /// Retrieves the feature API to be used inside a service and, if found, calls
 /// a closure over with.
-pub async fn retrieve(ctx: &Context, f: impl FnOnce(&dyn ExampleAPI)) -> merrors::Result<()> {
-    let name = "simple_api";
-
-    match ctx.feature(name).await {
-        None => Err(merrors::Error::FeatureNotFound(name.to_string())),
-        Some(feature) => {
-            if let Some(api) = retrieve_example_api(&feature) {
-                f(api);
-            }
-
-            Ok(())
-        }
+pub async fn execute_on<F>(ctx: &Context, f: F) -> merrors::Result<()>
+where
+    F: FnOnce(&dyn ExampleAPI) -> merrors::Result<()>,
+{
+    let feature = ctx.feature("simple_api").await?;
+    if let Some(api) = to_api(&feature) {
+        f(api)?
     }
+
+    Ok(())
 }
 
-fn retrieve_example_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn ExampleAPI> {
+fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn ExampleAPI> {
     feature.service_api()?.downcast_ref::<Example>().map(|s| s as &dyn ExampleAPI)
 }
 

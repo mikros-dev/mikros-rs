@@ -1,5 +1,5 @@
 use mikros::errors as merrors;
-use mikros::features;
+use mikros::features::example;
 use mikros::service::context::Context;
 
 #[derive(Clone)]
@@ -24,23 +24,30 @@ impl mikros::service::lifecycle::Lifecycle for Service {
     }
 }
 
+#[async_trait::async_trait]
 impl mikros::service::native::NativeService for Service {
-    fn start(&self, ctx: &Context) -> merrors::Result<()> {
+    async fn start(&self, ctx: &Context) -> merrors::Result<()> {
         ctx.logger().info("Start native service");
         //        Err(merrors::Error::InternalServiceError("some internal error happened".to_string()))
 
         let value = ctx.env("CUSTOM_ENV").unwrap();
         ctx.logger().info(format!("env value '{}'", value).as_str());
 
-        features::example::retrieve(ctx, |api| {
+        simple_api::execute_on(ctx, |api| {
             api.do_something();
-        })?;
+            Ok(())
+        }).await?;
+
+        example::execute_on(ctx, |api| {
+            api.do_something();
+            Ok(())
+        }).await?;
 
         ctx.logger().info("finished start native service method");
         Ok(())
     }
 
-    fn stop(&self, ctx: &Context) {
+    async fn stop(&self, ctx: &Context) {
         ctx.logger().info("Stop native service");
     }
 }

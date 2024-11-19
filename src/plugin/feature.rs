@@ -8,6 +8,42 @@ use crate::service::context::Context;
 
 /// Feature is a set of methods that every feature must implement to be supported
 /// by the framework.
+///
+/// The API described by this trait is only used internally. So if the service
+/// requires accessing the feature public API (which should be returned by the
+/// service_api method), one can do the following:
+///
+/// ```
+/// use mikros::service::context::Context;
+/// use mikros::{errors as merrors, plugin};
+///
+/// pub trait ExampleAPI {
+///     fn do_something(&self);
+/// }
+///
+/// pub struct Example;
+///
+/// /// Retrieves the feature API to be used inside a service and, if found, calls
+/// /// a closure over with.
+/// pub async fn execute_on<F>(ctx: &Context, f: F) -> merrors::Result<()>
+/// where
+///     F: FnOnce(&dyn ExampleAPI) -> merrors::Result<()>,
+/// {
+///     let feature = ctx.feature("simple_api").await?;
+///     if let Some(api) = to_api(&feature) {
+///         f(api)?
+///     }
+///
+///     Ok(())
+/// }
+///
+/// fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn ExampleAPI> {
+///     feature.service_api()?.downcast_ref::<Example>().map(|s| s as &dyn ExampleAPI)
+/// }
+/// ```
+///
+/// It is recommended, to keep a standard, that the public function which returns
+/// the feature public API to be named 'execute_on'.
 #[async_trait::async_trait]
 pub trait Feature: Send + FeatureClone + std::any::Any {
     /// The feature name.
