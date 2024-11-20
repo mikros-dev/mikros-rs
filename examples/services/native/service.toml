@@ -4,3 +4,12 @@ language = "rust"
 product = "examples"
 types = ["native"]
 envs = [ "CUSTOM_ENV" ]
+
+[features.simple_api]
+enabled = false
+collections = [ "name1", "name2" ]
+
+[features.another_api]
+enabled = true
+use_tls = true
+host = "localhost"

@@ -1,0 +1,9 @@
+[package]
+name = "simple_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1.83"
+mikros = { path = "../../../" }
+serde = "1.0.215"

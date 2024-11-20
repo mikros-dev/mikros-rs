@@ -13,6 +13,7 @@ pub enum Error {
     UnsupportedServicesCombination,
     ServiceKindUninitialized(definition::ServiceKind),
     NotFound(String),
+    LoadFeatureDefinition(String, String),
 }
 
 impl Error {
@@ -27,6 +28,7 @@ impl Error {
             Error::UnsupportedServicesCombination => "unsupported services combination".to_string(),
             Error::ServiceKindUninitialized(s) => format!("service type uninitialized: {}", s),
             Error::NotFound(s) => format!("not found: {}", s),
+            Error::LoadFeatureDefinition(s, msg) => format!("feature definition loading '{}' failed: {}", s, msg),
         }
     }
 }

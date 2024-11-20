@@ -13,7 +13,7 @@ use tokio::sync::watch;
 use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
-use crate::definition::{Definitions, ServiceKind};
+use crate::definition::{Definitions, ServiceKind, CustomServiceInfo};
 use crate::{errors as merrors, features, plugin};
 use crate::env::Env;
 use crate::service::builder::ServiceBuilder;
@@ -51,11 +51,23 @@ impl Service {
         })
     }
 
-    fn load_definitions(_builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
+    fn load_definitions(builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
         let args = Args::load();
+        let mut external_service_types: Vec<String> = Vec::new();
 
-        // FIXME: set custom_info from features
-        Definitions::new(args.config_path.as_deref(), None)
+        for svc in builder.services.iter() {
+            external_service_types.push(svc.kind().to_string())
+        }
+
+        let custom_info = if !external_service_types.is_empty() {
+            Some(CustomServiceInfo{
+                types: Some(external_service_types),
+            })
+        } else {
+            None
+        };
+
+        Definitions::new(args.config_path.as_deref(), custom_info)
     }
 
     fn start_logger(defs: &Definitions) -> Arc<logger::Logger> {
@@ -80,9 +92,9 @@ impl Service {
     pub async fn start(&mut self) -> merrors::Result<()> {
         self.logger.info("service starting");
         self.validate_definitions()?;
-        self.start_features()?;
+        self.start_features().await?;
         self.initialize_service_internals().await?;
-        self.print_service_resources();
+        self.print_service_resources().await;
         self.run().await
     }
 
@@ -105,9 +117,9 @@ impl Service {
         Ok(())
     }
 
-    fn start_features(&self) -> merrors::Result<()> {
-        // TODO
-        Ok(())
+    async fn start_features(&mut self) -> merrors::Result<()> {
+        self.logger.info("starting features");
+        self.context.initialize_features().await
     }
 
     async fn initialize_service_internals(&mut self) -> merrors::Result<()> {
@@ -129,8 +141,15 @@ impl Service {
         Ok(())
     }
 
-    fn print_service_resources(&self) {
-        // TODO
+    async fn print_service_resources(&self) {
+        let mut info: HashMap<String, logger::fields::FieldValue> = HashMap::new();
+
+        for feature in self.context.features.lock().await.iter() {
+            let i = feature.info();
+            info.extend(i.iter().map(|(k, v)| (k.clone(), v.clone())));
+        }
+
+        self.logger.infof("service resources", info);
     }
 
     async fn run(&mut self) -> merrors::Result<()> {
@@ -148,7 +167,7 @@ impl Service {
             self.logger.infof("service is running", svc.info());
 
             let handle = task::spawn(async move {
-                context.logger().debugf("starting service task", logger::fields![
+                context.logger_ref().debugf("starting service task", logger::fields![
                     "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
                 ]);
 
@@ -159,14 +178,14 @@ impl Service {
 
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
-                        context.logger().debugf("finishing service task", logger::fields![
+                        context.logger_ref().debugf("finishing service task", logger::fields![
                             "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
                         ]);
 
                     }
                 }
 
-                context.logger().debugf("service task finished",logger::fields![
+                context.logger_ref().debugf("service task finished", logger::fields![
                     "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
                 ]);
             });
@@ -214,13 +233,16 @@ impl Service {
             let _ = handle.await;
         }
 
-        // Then calls the callback to release service resources.
+        // Calls the callback to release service resources.
         for s in &definitions.types {
             let svc = self.get_server(&s.0)?;
             svc.on_finish().await?;
         }
 
+        // Cleanup features
+        self.context.cleanup_features().await;
         self.logger.info("service stopped");
+
         Ok(())
     }
 

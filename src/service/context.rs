@@ -1,4 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+
+use futures::lock::Mutex;
 
 use crate::definition::Definitions;
 use crate::env::Env;
@@ -12,7 +14,7 @@ pub struct Context {
     envs: Arc<Env>,
     definitions: Arc<Definitions>,
 
-    pub(crate) features: Arc<Mutex<Vec<Box<dyn plugin::feature::Feature>>>>
+    pub(crate) features: Arc<Mutex<Vec<Box<dyn plugin::feature::Feature>>>>,
 }
 
 impl Context {
@@ -32,7 +34,13 @@ impl Context {
 
     /// Gives the service access to the current logger, so it can display
     /// messages using the same format.
-    pub fn logger(&self) -> &logger::Logger {
+    pub fn logger(&self) -> Arc<logger::Logger> {
+        self.logger.clone()
+    }
+
+    /// Gives the service access to a reference of the current logger, so it
+    /// can display messages using the same format.
+    pub fn logger_ref(&self) -> &logger::Logger {
         &self.logger
     }
 
@@ -42,9 +50,47 @@ impl Context {
         self.envs.get_defined_env(name)
     }
 
+    /// Gives the service access to the service definitions loaded from the
+    /// service.toml file.
+    pub fn definitions(&self) -> Arc<Definitions> {
+        self.definitions.clone()
+    }
+
+    /// Gives the service access to a reference of the service definitions loaded
+    /// from the service.toml file.
+    pub fn definitions_ref(&self) -> &Definitions {
+        &self.definitions
+    }
+
     /// Returns the current service name.
     pub fn service_name(&self) -> String {
         self.definitions.name.clone()
+    }
+
+    /// On success, returns the feature found inside the context.
+    pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
+        match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
+            None => Err(merrors::Error::FeatureNotFound(name.to_string())),
+            Some(f) => Ok(f),
+        }
+    }
+
+    pub(crate) async fn initialize_features(&mut self) -> merrors::Result<()> {
+        for feature in self.features.lock().await.iter_mut() {
+            if feature.can_be_initialized(self.definitions.clone(), self.envs.clone())? {
+                feature.initialize(self).await?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn cleanup_features(&mut self) {
+        for feature in self.features.lock().await.iter() {
+            if feature.is_enabled() {
+                feature.cleanup().await
+            }
+        }
     }
 }
 
