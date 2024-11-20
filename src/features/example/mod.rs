@@ -6,31 +6,13 @@ use logger::fields::FieldValue;
 
 use crate::definition::Definitions;
 use crate::env::Env;
-use crate::errors as merrors;
+use crate::{errors as merrors, impl_feature_public_api};
 use crate::plugin;
 use crate::service::context::Context;
 
 /// The feature public API.
 pub trait ExampleAPI {
     fn do_something(&self);
-}
-
-/// Retrieves the feature API to be used inside a service and, if found, calls
-/// a closure over with.
-pub async fn execute_on<F>(ctx: &Context, f: F) -> merrors::Result<()>
-where
-    F: FnOnce(&dyn ExampleAPI) -> merrors::Result<()>,
-{
-    let feature = ctx.feature("simple_api").await?;
-    if let Some(api) = to_api(&feature) {
-        f(api)?
-    }
-
-    Ok(())
-}
-
-fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn ExampleAPI> {
-    feature.service_api()?.downcast_ref::<Example>().map(|s| s as &dyn ExampleAPI)
 }
 
 #[derive(Clone, Default)]
@@ -76,3 +58,5 @@ impl ExampleAPI for Example {
         println!("something")
     }
 }
+
+impl_feature_public_api!(ExampleAPI, Example, "example");

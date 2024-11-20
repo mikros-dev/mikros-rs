@@ -88,3 +88,32 @@ impl Clone for Box<dyn Feature> {
         self.clone_box()
     }
 }
+
+#[macro_export]
+macro_rules! impl_feature_public_api {
+    ($api_trait:ident, $api_struct:ident, $feature_name:expr) => {
+        pub async fn execute_on<F>(
+            ctx: &Context,
+            f: F,
+        ) -> merrors::Result<()>
+        where
+            F: FnOnce(&dyn $api_trait) -> merrors::Result<()>,
+        {
+            let feature = ctx.feature($feature_name).await?;
+            if let Some(api) = to_api(&feature) {
+                f(api)?;
+            }
+
+            Ok(())
+        }
+
+        fn to_api(
+            feature: &Box<dyn plugin::feature::Feature>,
+        ) -> Option<&dyn $api_trait> {
+            feature
+                .service_api()?
+                .downcast_ref::<$api_struct>()
+                .map(|s| s as &dyn $api_trait)
+        }
+    };
+}

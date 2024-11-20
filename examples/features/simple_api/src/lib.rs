@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use mikros::env::Env;
-use mikros::errors as merrors;
+use mikros::{errors as merrors, impl_feature_public_api};
 use mikros::logger;
 use mikros::plugin;
 use mikros::service::context::Context;
@@ -16,22 +16,6 @@ pub trait ExampleAPI {
 
 pub fn features() -> Vec<Box<dyn plugin::feature::Feature>> {
     vec![Box::new(Example::default())]
-}
-
-pub async fn execute_on<F>(ctx: &Context, f: F) -> merrors::Result<()>
-where
-    F: FnOnce(&dyn ExampleAPI) -> merrors::Result<()>,
-{
-    let feature = ctx.feature("simple_api").await?;
-    if let Some(api) = to_api(&feature) {
-        f(api)?
-    }
-    
-    Ok(())
-}
-
-fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn ExampleAPI> {
-    feature.service_api()?.downcast_ref::<Example>().map(|s| s as &dyn ExampleAPI)
 }
 
 #[derive(Clone, Default)]
@@ -98,3 +82,5 @@ impl ExampleAPI for Example {
         println!("simple_api doing something...")
     }
 }
+
+impl_feature_public_api!(ExampleAPI, Example, "simple_api");
