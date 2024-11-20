@@ -18,13 +18,13 @@ pub struct ServiceState {
     /// use std::sync::Arc;
     ///
     /// use axum::extract::State;
-    /// use mikros::FutureMutex;
+    /// use mikros::Mutex;
     /// use mikros::http::ServiceState;
     ///
     /// #[derive(Clone)]
     /// pub struct AppState;
     ///
-    /// async fn handler(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
+    /// async fn handler(State(state): State<Arc<Mutex<ServiceState>>>) -> String {
     ///     if let Some(app_state) = &state.lock().await.app_state {
     ///         let mut locked = app_state.as_ref().lock().await;
     ///         let svc_state = locked.downcast_mut::<AppState>().unwrap();

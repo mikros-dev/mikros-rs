@@ -14,7 +14,7 @@ use crate::errors as merrors;
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
-#[derive(serde_derive::Deserialize, validator::Validate)]
+#[derive(serde_derive::Deserialize, validator::Validate, Debug)]
 #[validate(context = CustomServiceInfo)]
 #[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
 pub struct Definitions {
@@ -26,12 +26,13 @@ pub struct Definitions {
     pub log: Option<Log>,
 
     features: Option<HashMap<String, serde_json::Value>>,
+    services: Option<HashMap<String, serde_json::Value>>,
 
     #[serde(deserialize_with = "service::deserialize_services")]
     pub types: Vec<service::Service>,
 }
 
-#[derive(serde_derive::Deserialize)]
+#[derive(serde_derive::Deserialize, Debug)]
 pub struct Log {
     pub level: String
 }
@@ -139,7 +140,7 @@ impl Definitions {
     {
         if let Some(d) = self.feature(feature) {
             return match serde_json::from_value::<T>(d.clone()) {
-                Err(e) => Err(merrors::Error::LoadFeatureDefinition(feature.to_string(), e.to_string())),
+                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(feature.to_string(), e.to_string())),
                 Ok(defs) => Ok(Some(defs)),
             }
         }
@@ -153,10 +154,32 @@ impl Definitions {
             Some(features) => features.get(feature).cloned()
         }
     }
+
+    pub fn load_service<T>(&self, service_kind: ServiceKind) -> merrors::Result<Option<T>>
+    where
+        T: DeserializeOwned,
+    {
+        if let Some(d) = self.service(&service_kind) {
+            return match serde_json::from_value::<T>(d.clone()) {
+                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(service_kind.to_string(), e.to_string())),
+                Ok(defs) => Ok(Some(defs)),
+            }
+        }
+
+        Ok(None)
+    }
+
+    fn service(&self, service_kind: &ServiceKind) -> Option<serde_json::Value> {
+        match &self.services {
+            None => None,
+            Some(services) => services.get(&service_kind.to_string()).cloned()
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use serde_derive::Deserialize;
     use super::*;
 
     fn assets_path() -> std::path::PathBuf {
@@ -212,6 +235,70 @@ mod tests {
         let defs = Definitions::new(filename.to_str(), Some(custom_info));
         assert!(defs.is_ok());
         assert_eq!(defs.unwrap().types.len(), 1);
+    }
 
+    #[test]
+    fn test_load_features_settings() {
+        let filename = assets_path().join("definitions/service.toml.ok");
+        let defs = Definitions::new(filename.to_str(), None);
+        assert!(defs.is_ok());
+
+        let defs = defs.unwrap();
+
+        #[derive(Deserialize)]
+        struct SimpleApi {
+            enabled: bool,
+            collections: Vec<String>,
+        }
+
+        let s: merrors::Result<Option<SimpleApi>> = defs.clone().load_feature("simple_api");
+        assert!(s.is_ok());
+
+        let simple_api = s.unwrap().unwrap();
+        assert_eq!(simple_api.collections.len(), 2);
+        assert_eq!(simple_api.enabled, true);
+
+        #[derive(Deserialize)]
+        struct AnotherApi {
+            enabled: bool,
+            use_tls: bool,
+            host: String,
+        }
+
+        let s: merrors::Result<Option<AnotherApi>> = defs.clone().load_feature("another_api");
+        assert!(s.is_ok());
+
+        let another_api = s.unwrap().unwrap();
+        assert_eq!(another_api.enabled, true);
+        assert_eq!(another_api.use_tls, true);
+        assert_eq!(another_api.host, "localhost");
+    }
+
+    #[test]
+    fn test_load_service_settings() {
+        let custom_info = CustomServiceInfo{
+            types: Some(vec!["cronjob".to_string()]),
+        };
+
+        let filename = assets_path().join("definitions/service.toml.ok_cronjob");
+        let defs = Definitions::new(filename.to_str(), Some(custom_info));
+        assert!(defs.is_ok());
+
+        let defs = defs.unwrap();
+
+        #[derive(Deserialize)]
+        struct Cronjob {
+            frequency: String,
+            scheduled_times: Vec<String>,
+            days: Vec<String>,
+        }
+
+        let s: merrors::Result<Option<Cronjob>> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
+        assert!(s.is_ok());
+
+        let cronjob = s.unwrap().unwrap();
+        assert_eq!(cronjob.days.len(), 1);
+        assert_eq!(cronjob.frequency, "weekly");
+        assert_eq!(cronjob.scheduled_times.len(), 2);
     }
 }

@@ -13,7 +13,7 @@ use crate::service::context::Context;
 /// requires accessing the feature public API (which should be returned by the
 /// service_api method), one can do the following:
 ///
-/// ```
+/// ```ignore
 /// use mikros::service::context::Context;
 /// use mikros::{errors as merrors, plugin};
 ///

@@ -6,7 +6,7 @@ product = "incredible-product"
 
 [features.simple_api]
 enabled = true
-collection = [ "name1", "name2" ]
+collections = [ "name1", "name2" ]
 
 [features.another_api]
 enabled = true

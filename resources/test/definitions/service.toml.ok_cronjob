@@ -1,0 +1,10 @@
+name = "cronjob-service"
+types = ["cronjob"]
+version = "v1.0.0"
+language = "rust"
+product = "incredible-product"
+
+[services.cronjob]
+frequency = "weekly"
+scheduled_times = [ "09:00", "10:00"]
+days = [ "wed" ]
