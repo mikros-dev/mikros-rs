@@ -24,7 +24,7 @@ use crate::{definition, errors as merrors, plugin};
 pub struct ServiceBuilder {
     pub(crate) servers: HashMap<String, Box<dyn plugin::service::Service>>,
     pub(crate) features: Vec<Box<dyn plugin::feature::Feature>>,
-    pub(crate) services: Vec<Box<dyn plugin::service::Service>>,
+    pub(crate) custom_service_types: Vec<String>,
 }
 
 impl ServiceBuilder {
@@ -32,21 +32,37 @@ impl ServiceBuilder {
         Self {
             servers: HashMap::new(),
             features: Vec::new(),
-            services: Vec::new(),
+            custom_service_types: Vec::new(),
         }
+    }
+
+    fn abort(err: merrors::Error) {
+        panic!("{}", err.to_string())
     }
 
     /// Initializes the native service type with the required structure
     /// implementing its API.
     pub fn native(mut self, svc: Box<dyn NativeService>) -> Self {
-        self.servers.insert(definition::ServiceKind::Native.to_string(), Box::new(Native::new(svc)));
+        let kind = definition::ServiceKind::Native;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Native::new(svc)));
         self
     }
 
     /// Initializes the script service type with the required structure
     /// implementing its API.
     pub fn script(mut self, svc: Box<dyn ScriptService>) -> Self {
-        self.servers.insert(definition::ServiceKind::Script.to_string(), Box::new(Script::new(svc)));
+        let kind = definition::ServiceKind::Script;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Script::new(svc)));
         self
     }
 
@@ -62,7 +78,13 @@ impl ServiceBuilder {
             + 'static,
         S::Future: Send + 'static,
     {
-        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new(server)));
+        let kind = definition::ServiceKind::Grpc;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Grpc::new(server)));
         self
     }
 
@@ -80,14 +102,26 @@ impl ServiceBuilder {
         S::Future: Send + 'static,
         L: Lifecycle + 'static
     {
-        self.servers.insert(definition::ServiceKind::Grpc.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
+        let kind = definition::ServiceKind::Grpc;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
         self
     }
 
     /// Initializes the HTTP service type with the required structure
     /// implementing the service endpoint handlers.
     pub fn http(mut self, router: Router<Arc<Mutex<ServiceState>>>) -> Self {
-        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new(router)));
+        let kind = definition::ServiceKind::Http;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Http::new(router)));
         self
     }
 
@@ -98,7 +132,13 @@ impl ServiceBuilder {
     where
         L: Lifecycle + 'static
     {
-        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
+        let kind = definition::ServiceKind::Http;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
         self
     }
 
@@ -109,7 +149,13 @@ impl ServiceBuilder {
     where
         S: Any + Send + Sync
     {
-        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_state(router, state)));
+        let kind = definition::ServiceKind::Http;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Http::new_with_state(router, state)));
         self
     }
 
@@ -122,7 +168,13 @@ impl ServiceBuilder {
         L: Lifecycle + 'static,
         S: Any + Send + Sync
     {
-        self.servers.insert(definition::ServiceKind::Http.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
+        let kind = definition::ServiceKind::Http;
+
+        if self.servers.contains_key(&kind.to_string()) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+        }
+
+        self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
         self
     }
 
@@ -134,8 +186,16 @@ impl ServiceBuilder {
 
     /// Adds external service type implementations into the current service
     /// environment.
-    pub fn with_services(mut self, services: Vec<Box<dyn plugin::service::Service>>) -> Self {
-        self.services.extend(services);
+    pub fn custom(mut self, custom_service: Box<dyn plugin::service::Service>) -> Self {
+        let service_type = custom_service.kind().to_string();
+
+        if self.servers.contains_key(&service_type) {
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", service_type.to_string())));
+        }
+
+        self.servers.insert(service_type.clone(), custom_service);
+        self.custom_service_types.push(service_type);
+
         self
     }
 

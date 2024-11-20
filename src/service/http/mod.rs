@@ -12,6 +12,7 @@ use crate::http::ServiceState;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 use crate::{definition, env, errors as merrors, plugin};
+use crate::plugin::service::ServiceExecutionMode;
 
 #[derive(Clone)]
 pub(crate) struct Http {
@@ -97,6 +98,10 @@ impl plugin::service::Service for Http {
             "svc.port" => FieldValue::Number(self.port as i64),
             "svc.mode" => FieldValue::String(definition::ServiceKind::Http.to_string()),
         ]
+    }
+
+    fn mode(&self) -> ServiceExecutionMode {
+        ServiceExecutionMode::Block
     }
 
     async fn run(&self, ctx: &Context, shutdown_rx: Receiver<()>) -> merrors::Result<()> {

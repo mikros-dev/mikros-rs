@@ -8,6 +8,7 @@ use tokio::sync::watch;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 use crate::{definition, env, errors as merrors, plugin};
+use crate::plugin::service::ServiceExecutionMode;
 
 #[async_trait::async_trait]
 pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
@@ -79,6 +80,10 @@ impl plugin::service::Service for Native {
         logger::fields![
             "kind".to_string() => FieldValue::String(self.kind().to_string()),
         ]
+    }
+
+    fn mode(&self) -> ServiceExecutionMode {
+        ServiceExecutionMode::Block
     }
 
     async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {

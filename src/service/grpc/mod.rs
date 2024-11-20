@@ -111,6 +111,10 @@ where
         ]
     }
 
+    fn mode(&self) -> plugin::service::ServiceExecutionMode {
+        plugin::service::ServiceExecutionMode::Block
+    }
+
     async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
         let addr = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),

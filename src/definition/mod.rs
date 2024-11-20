@@ -119,13 +119,6 @@ impl Definitions {
         }
     }
 
-    pub(crate) fn is_script_service(&self) -> bool {
-        self.types.iter().any(|t| {
-            let service::Service(kind, _) = t;
-            kind.to_string() == "script"
-        })
-    }
-
     pub(crate) fn get_service_type(&self, kind: ServiceKind) -> merrors::Result<&service::Service> {
         match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
