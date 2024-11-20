@@ -71,7 +71,13 @@ impl Context {
     pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
         match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
             None => Err(merrors::Error::FeatureNotFound(name.to_string())),
-            Some(f) => Ok(f),
+            Some(f) => {
+                if !f.is_enabled() {
+                    return Err(merrors::Error::FeatureDisabled(name.to_string()));
+                }
+
+                Ok(f)
+            },
         }
     }
 

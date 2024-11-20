@@ -89,6 +89,11 @@ impl Clone for Box<dyn Feature> {
     }
 }
 
+/// This macro adds APIs to the feature allowing it to be used by services
+/// in a easy way.
+///
+/// The execute_on function receives a closure that will be executed in the
+/// feature, if it is enabled.
 #[macro_export]
 macro_rules! impl_feature_public_api {
     ($api_trait:ident, $api_struct:ident, $feature_name:expr) => {
