@@ -1,0 +1,11 @@
+[package]
+name = "cronjob_service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1.83"
+mikros = { path = "../../../" }
+cronjob = { path = "../../services/cronjob" }
+simple_api = { path = "../../features/simple_api" }
+tokio = { version = "1.41.1", features = ["full"] }
