@@ -14,6 +14,7 @@ pub enum Error {
     ServiceKindUninitialized(definition::ServiceKind),
     NotFound(String),
     LoadFeatureDefinition(String, String),
+    FeatureDisabled(String),
 }
 
 impl Error {
@@ -29,6 +30,7 @@ impl Error {
             Error::ServiceKindUninitialized(s) => format!("service type uninitialized: {}", s),
             Error::NotFound(s) => format!("not found: {}", s),
             Error::LoadFeatureDefinition(s, msg) => format!("feature definition loading '{}' failed: {}", s, msg),
+            Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
         }
     }
 }
