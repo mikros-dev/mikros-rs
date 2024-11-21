@@ -27,6 +27,7 @@ pub struct Definitions {
 
     features: Option<HashMap<String, serde_json::Value>>,
     services: Option<HashMap<String, serde_json::Value>>,
+    clients: Option<HashMap<String, Client>>,
 
     #[serde(deserialize_with = "service::deserialize_services")]
     pub types: Vec<service::Service>,
@@ -35,6 +36,12 @@ pub struct Definitions {
 #[derive(serde_derive::Deserialize, Debug)]
 pub struct Log {
     pub level: String
+}
+
+#[derive(serde_derive::Deserialize, Debug, Clone)]
+pub struct Client {
+    host: String,
+    port: i32,
 }
 
 #[derive(serde_derive::Deserialize, Clone, Debug, PartialEq)]
@@ -168,6 +175,10 @@ impl Definitions {
             Some(services) => services.get(&service_kind.to_string()).cloned()
         }
     }
+
+    pub fn client(&self, name: &str) -> Option<Client> {
+        self.clients.clone()?.get(name).cloned()
+    }
 }
 
 #[cfg(test)]
@@ -293,5 +304,26 @@ mod tests {
         assert_eq!(cronjob.days.len(), 1);
         assert_eq!(cronjob.frequency, "weekly");
         assert_eq!(cronjob.scheduled_times.len(), 2);
+    }
+
+    #[test]
+    fn test_load_clients() {
+        let filename = assets_path().join("definitions/service.toml.ok_clients");
+        let defs = Definitions::new(filename.to_str(), None);
+        assert!(defs.is_ok());
+
+        let defs = defs.unwrap();
+        let user = defs.client("user");
+        assert!(user.is_some());
+        assert_eq!(user.clone().unwrap().host, "localhost");
+        assert_eq!(user.unwrap().port, 7070);
+
+        let auth = defs.client("auth");
+        assert!(auth.is_none());
+
+        let address = defs.client("address");
+        assert!(address.is_some());
+        assert_eq!(address.clone().unwrap().host, "127.0.0.1");
+        assert_eq!(address.unwrap().port, 7071);
     }
 }
