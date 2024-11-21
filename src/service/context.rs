@@ -67,6 +67,14 @@ impl Context {
         self.definitions.name.clone()
     }
 
+    /// Returns the URL connection string for linking services.
+    pub fn client_connection_url(&self, client_name: &str) -> String {
+        match self.definitions.client(client_name) {
+            Some(c) => format!("{}:{}", c.host, c.port),
+            None => format!("{}.{}:{}", client_name, self.envs.coupled_namespace.clone(), self.envs.coupled_port)
+        }
+    }
+
     /// On success, returns the feature found inside the context.
     pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
         match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
@@ -106,4 +114,18 @@ where
     B: prost::Message,
 {
     request.extensions().get::<Arc<Context>>().unwrap().clone()
+}
+
+/// A macro to help service coupling using gRPC connections.
+#[macro_export]
+macro_rules! link_grpc_service {
+    ($context:ident, $client:ident, $client_name:expr) => {
+        {
+            let url = $context.client_connection_url($client_name);
+            match $client::connect(url).await {
+                Ok(c) => c,
+                Err(e) => return Err(mikros::errors::Error::GrpcClient($client_name.to_string(), e.to_string()))
+            }
+        }
+    };
 }

@@ -12,8 +12,8 @@ use crate::service::lifecycle::Lifecycle;
 
 #[async_trait::async_trait]
 pub trait ScriptService: ScriptServiceClone + Lifecycle + Send {
-    fn run(&self, ctx: &Context) -> merrors::Result<()>;
-    fn cleanup(&self, ctx: &Context);
+    async fn run(&self, ctx: &Context) -> merrors::Result<()>;
+    async fn cleanup(&self, ctx: &Context);
 }
 
 pub trait ScriptServiceClone {
@@ -50,8 +50,8 @@ impl Script {
 
 #[async_trait::async_trait]
 impl Lifecycle for Script {
-    async fn on_start(&mut self) -> merrors::Result<()> {
-        self.svc.lock().await.on_start().await
+    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
+        self.svc.lock().await.on_start(ctx).await
     }
 
     async fn on_finish(&self) -> merrors::Result<()> {
@@ -80,10 +80,10 @@ impl plugin::service::Service for Script {
     }
 
     async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
-        self.svc.lock().await.run(ctx)
+        self.svc.lock().await.run(ctx).await
     }
 
     async fn stop(&self, ctx: &Context) {
-        self.svc.lock().await.cleanup(ctx)
+        self.svc.lock().await.cleanup(ctx).await
     }
 }

@@ -13,7 +13,7 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self) -> merrors::Result<()> {
+    async fn on_start(&mut self, _ctx: &Context) -> merrors::Result<()> {
         println!("lifecycle on_start");
         Ok(())
     }
@@ -24,17 +24,20 @@ impl mikros::service::lifecycle::Lifecycle for Service {
     }
 }
 
+#[async_trait::async_trait]
 impl mikros::service::script::ScriptService for Service {
-    fn run(&self, ctx: &Context) -> merrors::Result<()> {
+    async fn run(&self, ctx: &Context) -> merrors::Result<()> {
         ctx.logger().info("Start script service");
-        features::example::retrieve(ctx, |api| {
+        features::example::execute_on(ctx, |api| {
             api.do_something();
-        })?;
+            Ok(())
+        })
+        .await?;
 
         Ok(())
     }
 
-    fn cleanup(&self, ctx: &Context) {
+    async fn cleanup(&self, ctx: &Context) {
         ctx.logger().info("Stop script service");
     }
 }

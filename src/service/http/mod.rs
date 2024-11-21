@@ -60,9 +60,9 @@ impl Http {
 
 #[async_trait::async_trait]
 impl Lifecycle for Http {
-    async fn on_start(&mut self) -> merrors::Result<()> {
+    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
         if let Some(lifecycle) = &self.lifecycle {
-            return lifecycle.lock().await.on_start().await
+            return lifecycle.lock().await.on_start(ctx).await
         }
 
         Ok(())

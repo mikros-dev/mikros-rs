@@ -13,7 +13,7 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self) -> merrors::Result<()> {
+    async fn on_start(&mut self, _ctx: &Context) -> merrors::Result<()> {
         println!("lifecycle on_start");
         Ok(())
     }
@@ -36,12 +36,14 @@ impl mikros::service::native::NativeService for Service {
         simple_api::execute_on(ctx, |api| {
             api.do_something();
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         example::execute_on(ctx, |api| {
             api.do_something();
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         ctx.logger().info("finished start native service method");
         Ok(())

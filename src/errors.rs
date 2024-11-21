@@ -16,6 +16,7 @@ pub enum Error {
     DefinitionLoadingFailure(String, String),
     FeatureDisabled(String),
     BuilderFailed(String),
+    GrpcClient(String, String)
 }
 
 impl Error {
@@ -33,6 +34,7 @@ impl Error {
             Error::DefinitionLoadingFailure(s, msg) => format!("definition loading from '{}' failed: {}", s, msg),
             Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
             Error::BuilderFailed(s) => format!("builder failed: {}", s),
+            Error::GrpcClient(s, msg) => format!("grpc client '{}' error: {}", s, msg),
         }
     }
 }

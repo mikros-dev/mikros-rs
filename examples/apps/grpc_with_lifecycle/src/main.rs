@@ -4,20 +4,22 @@ pub mod helloworld {
     include!("generated/helloworld.rs"); // Include generated code
 }
 
-use mikros::features;
 use mikros::service::{builder::ServiceBuilder, context, lifecycle};
+use mikros::{features, link_grpc_service};
+use tonic::transport::Channel;
 use tonic::{Request, Response, Status};
 
+use crate::helloworld::greeter_client::GreeterClient;
 use helloworld::greeter_server::{Greeter, GreeterServer};
 use helloworld::{HelloReply, HelloRequest};
 
 #[derive(Clone)]
 pub struct MyGreeter {
-    ctx: Arc<mikros::FutureMutex<Context>>,
+    ctx: Arc<mikros::Mutex<Context>>,
 }
 
 impl MyGreeter {
-    pub fn new(ctx: Arc<mikros::FutureMutex<Context>>) -> Self {
+    pub fn new(ctx: Arc<mikros::Mutex<Context>>) -> Self {
         Self { ctx: ctx.clone() }
     }
 }
@@ -33,9 +35,21 @@ impl Greeter for MyGreeter {
         ctx.logger()
             .info(format!("the inner value is: {}", self.ctx.lock().await.value).as_str());
 
-        let _ = features::example::retrieve(&ctx, |api| {
+        let reply = helloworld::HelloRequest::default();
+        self.ctx
+            .lock()
+            .await
+            .greeter
+            .clone()
+            .unwrap()
+            .say_hello(reply)
+            .await?;
+
+        let _ = features::example::execute_on(&ctx, |api| {
             api.do_something();
-        });
+            Ok(())
+        })
+        .await;
 
         let reply = HelloReply {
             message: format!("Hello, {}!", request.into_inner().name),
@@ -46,16 +60,18 @@ impl Greeter for MyGreeter {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Context {
     value: i32,
+    greeter: Option<GreeterClient<Channel>>,
 }
 
 #[tonic::async_trait]
 impl lifecycle::Lifecycle for Context {
-    async fn on_start(&mut self) -> mikros::errors::Result<()> {
+    async fn on_start(&mut self, ctx: &context::Context) -> mikros::errors::Result<()> {
         println!("grpc on_start called");
         self.value = 42;
+        self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
         Ok(())
     }
 
@@ -67,7 +83,7 @@ impl lifecycle::Lifecycle for Context {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ctx = Arc::new(mikros::FutureMutex::new(Context { value: 0 }));
+    let ctx = Arc::new(mikros::Mutex::new(Context::default()));
     let greeter = Arc::new(MyGreeter::new(ctx.clone()));
     let greeter_service = GreeterServer::from_arc(greeter);
 
@@ -76,11 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     match svc {
-        Ok(mut svc) => {
-            if let Err(e) = svc.start().await {
-                println!("application error: {}", e);
-            }
-        }
+        Ok(mut svc) => svc.start().await,
         Err(e) => panic!("{}", e.to_string()),
     }
 
