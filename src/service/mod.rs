@@ -56,7 +56,6 @@ impl Service {
         let args = Args::load();
         let custom_info = if !builder.custom_service_types.is_empty() {
             Some(CustomServiceInfo{
-                //types: Some(external_service_types),
                 types: Some(builder.custom_service_types.clone()),
             })
         } else {
