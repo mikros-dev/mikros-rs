@@ -218,8 +218,8 @@ impl Service {
     }
 
     async fn wait_finishing_signal(&self) {
-        // If we are here is because we already passed the validation and since
-        // we only execute when execution modes are equal of all servers, it does
+        // If we are here is because we already passed the validation, and since
+        // we only execute when execution modes are equal for all servers, it does
         // not matter which one we get.
         let mode = self.servers.values().next().unwrap().mode();
 

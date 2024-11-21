@@ -40,34 +40,34 @@ impl ServiceBuilder {
         panic!("{}", err.to_string())
     }
 
-    /// Initializes the native service type with the required structure
-    /// implementing its API.
+    /// Initializes the native service type with the required structure implementing
+    /// its API.
     pub fn native(mut self, svc: Box<dyn NativeService>) -> Self {
         let kind = definition::ServiceKind::Native;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Native::new(svc)));
         self
     }
 
-    /// Initializes the script service type with the required structure
-    /// implementing its API.
+    /// Initializes the script service type with the required structure implementing
+    /// its API.
     pub fn script(mut self, svc: Box<dyn ScriptService>) -> Self {
         let kind = definition::ServiceKind::Script;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Script::new(svc)));
         self
     }
 
-    /// Initializes the gRPC service type with the required structure
-    /// implementing its API.
+    /// Initializes the gRPC service type with the required structure implementing
+    /// its API.
     pub fn grpc<S>(mut self, server: S) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
@@ -81,16 +81,15 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new(server)));
         self
     }
 
-    /// Initializes the gRPC service type with the required structure
-    /// implementing its API and another with implementing the Lifecycle
-    /// API.
+    /// Initializes the gRPC service type with the required structure implementing
+    /// its API and another with implementing the Lifecycle API.
     pub fn grpc_with_lifecycle<S, L>(mut self, server: S, lifecycle: Arc<Mutex<L>>) -> Self
     where
         S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
@@ -105,65 +104,78 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
         self
     }
 
-    /// Initializes the HTTP service type with the required structure
-    /// implementing the service endpoint handlers.
+    /// Initializes the HTTP service type with the required structure implementing
+    /// the service endpoint handlers.
     pub fn http(mut self, router: Router<Arc<Mutex<ServiceState>>>) -> Self {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new(router)));
         self
     }
 
-    /// Initializes the HTTP service type with the required structure
-    /// implementing the service endpoint handlers and another with
-    /// implementing the Lifecycle API.
-    pub fn http_with_lifecycle<L>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>) -> Self
+    /// Initializes the HTTP service type with the required structure implementing
+    /// the service endpoint handlers and another with implementing the Lifecycle
+    /// API.
+    pub fn http_with_lifecycle<L>(
+        mut self,
+        router: Router<Arc<Mutex<ServiceState>>>,
+        lifecycle: Arc<Mutex<L>>,
+    ) -> Self
     where
         L: Lifecycle + 'static
     {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
         self
     }
 
-    /// Initializes the HTTP service type with the required structure
-    /// implementing the service endpoint handlers. It also receives an
-    /// object that will be passed inside the handlers state.
-    pub fn http_with_state<S>(mut self, router: Router<Arc<Mutex<ServiceState>>>, state: Arc<Mutex<S>>) -> Self
+    /// Initializes the HTTP service type with the required structure implementing
+    /// the service endpoint handlers. It also receives an object that will be
+    /// passed inside the handlers state.
+    pub fn http_with_state<S>(
+        mut self,
+        router: Router<Arc<Mutex<ServiceState>>>,
+        state: Arc<Mutex<S>>,
+    ) -> Self
     where
         S: Any + Send + Sync
     {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_state(router, state)));
         self
     }
 
-    /// Initializes the HTTP service type with the required structure
-    /// implementing the service endpoint handlers and another with
-    /// implementing the Lifecycle API. It also receives an object that
-    /// will be passed inside the handlers state.
-    pub fn http_with_lifecycle_and_state<L, S>(mut self, router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<S>>) -> Self
+    /// Initializes the HTTP service type with the required structure implementing
+    /// the service endpoint handlers and another with implementing the Lifecycle
+    /// API. It also receives an object that will be passed inside the handlers
+    /// state.
+    pub fn http_with_lifecycle_and_state<L, S>(
+        mut self,
+        router: Router<Arc<Mutex<ServiceState>>>,
+        lifecycle: Arc<Mutex<L>>,
+        state: Arc<Mutex<S>>,
+    ) -> Self
     where
         L: Lifecycle + 'static,
         S: Any + Send + Sync
@@ -171,26 +183,27 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
         self
     }
 
-    /// Adds external features into the current service environment.
+    /// Adds external features into the current service environment so they can
+    /// be used inside the proper service.
     pub fn with_features(mut self, features: Vec<Box<dyn plugin::feature::Feature>>) -> Self {
         self.features.extend(features);
         self
     }
 
-    /// Adds external service type implementations into the current service
-    /// environment.
+    /// Initializes the service as a custom one. The user must provide here the
+    /// proper service implementation with its object implementing its API.
     pub fn custom(mut self, custom_service: Box<dyn plugin::service::Service>) -> Self {
         let service_type = custom_service.kind().to_string();
 
         if self.servers.contains_key(&service_type) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", service_type.to_string())));
+            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", service_type)));
         }
 
         self.servers.insert(service_type.clone(), custom_service);
