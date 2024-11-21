@@ -133,17 +133,12 @@ impl Service {
     async fn initialize_service_internals(&mut self) -> merrors::Result<()> {
         let definitions = self.definitions.clone();
         let envs = self.envs.clone();
+        let ctx = self.context.clone();
 
         for s in &definitions.types {
             let svc = self.get_server(&s.0)?;
-            svc.initialize(envs.clone(), definitions.clone())?
-        }
-
-        // TODO couple clients
-
-        for s in &definitions.types {
-            let svc = self.get_server(&s.0)?;
-            svc.on_start().await?;
+            svc.initialize(envs.clone(), definitions.clone())?;
+            svc.on_start(&ctx).await?;
         }
 
         Ok(())

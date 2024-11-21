@@ -40,8 +40,8 @@ pub struct Log {
 
 #[derive(serde_derive::Deserialize, Debug, Clone)]
 pub struct Client {
-    host: String,
-    port: i32,
+    pub host: String,
+    pub port: i32,
 }
 
 #[derive(serde_derive::Deserialize, Clone, Debug, PartialEq)]

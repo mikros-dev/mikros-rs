@@ -50,8 +50,8 @@ impl Script {
 
 #[async_trait::async_trait]
 impl Lifecycle for Script {
-    async fn on_start(&mut self) -> merrors::Result<()> {
-        self.svc.lock().await.on_start().await
+    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
+        self.svc.lock().await.on_start(ctx).await
     }
 
     async fn on_finish(&self) -> merrors::Result<()> {
