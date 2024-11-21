@@ -5,7 +5,6 @@ use axum::routing::get;
 use futures::lock::Mutex;
 use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
-use mikros::FutureMutex;
 
 #[derive(Clone, Default)]
 pub struct AppState {
@@ -19,7 +18,7 @@ impl AppState {
 }
 
 // Handler method for the first endpoint
-async fn handler_one(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
+async fn handler_one(State(state): State<Arc<Mutex<ServiceState>>>) -> String {
     println!("Handler One");
     let context = state.lock().await.context();
     context.logger().info("just a log message");
@@ -28,7 +27,7 @@ async fn handler_one(State(state): State<Arc<FutureMutex<ServiceState>>>) -> Str
 }
 
 // Handler method for the second endpoint
-async fn handler_two(State(state): State<Arc<FutureMutex<ServiceState>>>) -> String {
+async fn handler_two(State(state): State<Arc<Mutex<ServiceState>>>) -> String {
     println!("Handler Two");
 
     let context = state.lock().await.context();
@@ -56,11 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     match svc {
-        Ok(mut svc) => {
-            if let Err(e) = svc.start().await {
-                println!("application error: {}", e);
-            }
-        }
+        Ok(mut svc) => svc.start().await,
         Err(e) => panic!("{}", e.to_string()),
     }
 

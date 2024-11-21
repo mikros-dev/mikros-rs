@@ -30,11 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let svc = ServiceBuilder::default().http(api).build();
 
     match svc {
-        Ok(mut svc) => {
-            if let Err(e) = svc.start().await {
-                println!("application error: {}", e);
-            }
-        }
+        Ok(mut svc) => svc.start().await,
         Err(e) => panic!("{}", e.to_string()),
     }
 

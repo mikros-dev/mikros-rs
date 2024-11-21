@@ -13,11 +13,11 @@ use helloworld::{HelloReply, HelloRequest};
 
 #[derive(Clone)]
 pub struct MyGreeter {
-    ctx: Arc<mikros::FutureMutex<Context>>,
+    ctx: Arc<mikros::Mutex<Context>>,
 }
 
 impl MyGreeter {
-    pub fn new(ctx: Arc<mikros::FutureMutex<Context>>) -> Self {
+    pub fn new(ctx: Arc<mikros::Mutex<Context>>) -> Self {
         Self { ctx: ctx.clone() }
     }
 }
@@ -33,9 +33,11 @@ impl Greeter for MyGreeter {
         ctx.logger()
             .info(format!("the inner value is: {}", self.ctx.lock().await.value).as_str());
 
-        let _ = features::example::retrieve(&ctx, |api| {
+        let _ = features::example::execute_on(&ctx, |api| {
             api.do_something();
-        });
+            Ok(())
+        })
+        .await;
 
         let reply = HelloReply {
             message: format!("Hello, {}!", request.into_inner().name),
@@ -53,18 +55,14 @@ pub struct Context {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ctx = Arc::new(mikros::FutureMutex::new(Context { value: 0 }));
+    let ctx = Arc::new(mikros::Mutex::new(Context { value: 0 }));
     let greeter = Arc::new(MyGreeter::new(ctx.clone()));
     let greeter_service = GreeterServer::from_arc(greeter);
 
     let svc = ServiceBuilder::default().grpc(greeter_service).build();
 
     match svc {
-        Ok(mut svc) => {
-            if let Err(e) = svc.start().await {
-                println!("application error: {}", e);
-            }
-        }
+        Ok(mut svc) => svc.start().await,
         Err(e) => panic!("{}", e.to_string()),
     }
 

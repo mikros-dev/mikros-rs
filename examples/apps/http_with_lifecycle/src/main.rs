@@ -20,7 +20,10 @@ impl AppState {
 
 #[async_trait::async_trait]
 impl Lifecycle for AppState {
-    async fn on_start(&mut self) -> mikros::errors::Result<()> {
+    async fn on_start(
+        &mut self,
+        _ctx: &mikros::service::context::Context,
+    ) -> mikros::errors::Result<()> {
         println!("service on_start");
         self.value = 42;
         Ok(())
@@ -70,11 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build();
 
     match svc {
-        Ok(mut svc) => {
-            if let Err(e) = svc.start().await {
-                println!("application error: {}", e);
-            }
-        }
+        Ok(mut svc) => svc.start().await,
         Err(e) => panic!("{}", e.to_string()),
     }
 
