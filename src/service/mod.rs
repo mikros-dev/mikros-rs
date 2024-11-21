@@ -16,6 +16,7 @@ use crate::args::Args;
 use crate::definition::{Definitions, ServiceKind, CustomServiceInfo};
 use crate::{errors as merrors, features, plugin};
 use crate::env::Env;
+use crate::plugin::service::ServiceExecutionMode;
 use crate::service::builder::ServiceBuilder;
 
 pub struct Service {
@@ -53,15 +54,9 @@ impl Service {
 
     fn load_definitions(builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
         let args = Args::load();
-        let mut external_service_types: Vec<String> = Vec::new();
-
-        for svc in builder.services.iter() {
-            external_service_types.push(svc.kind().to_string())
-        }
-
-        let custom_info = if !external_service_types.is_empty() {
+        let custom_info = if !builder.custom_service_types.is_empty() {
             Some(CustomServiceInfo{
-                types: Some(external_service_types),
+                types: Some(builder.custom_service_types.clone()),
             })
         } else {
             None
@@ -89,8 +84,16 @@ impl Service {
     }
 
     /// Puts the service to run.
-    pub async fn start(&mut self) -> merrors::Result<()> {
+    pub async fn start(&mut self) {
         self.logger.info("service starting");
+
+        if let Err(e) = self.start_service().await {
+            self.logger.error(&e.to_string());
+            std::process::exit(1);
+        }
+    }
+
+    async fn start_service(&mut self) -> merrors::Result<()> {
         self.validate_definitions()?;
         self.start_features().await?;
         self.initialize_service_internals().await?;
@@ -104,8 +107,8 @@ impl Service {
         }
 
         // Script services should be a single service.
-        if self.definitions.is_script_service() && self.definitions.types.len() > 1 {
-            return Err(merrors::Error::UnsupportedServicesCombination)
+        if !self.has_equal_execution_modes() {
+            return Err(merrors::Error::UnsupportedServicesExecutionMode)
         }
 
         for t in &self.definitions.types {
@@ -115,6 +118,11 @@ impl Service {
         }
 
         Ok(())
+    }
+
+    fn has_equal_execution_modes(&self) -> bool {
+        let modes: Vec<ServiceExecutionMode> = self.servers.values().map(|s|s.mode()).collect();
+        modes.iter().all(|m| *m == modes[0])
     }
 
     async fn start_features(&mut self) -> merrors::Result<()> {
@@ -209,8 +217,13 @@ impl Service {
     }
 
     async fn wait_finishing_signal(&self) {
+        // If we are here is because we already passed the validation, and since
+        // we only execute when execution modes are equal for all servers, it does
+        // not matter which one we get.
+        let mode = self.servers.values().next().unwrap().mode();
+
         // Wait for a signal to finish the service.
-        if !self.definitions.is_script_service() {
+        if mode == ServiceExecutionMode::Block {
             signal::ctrl_c().await.expect("failed to listen for ctrl-c");
         }
     }

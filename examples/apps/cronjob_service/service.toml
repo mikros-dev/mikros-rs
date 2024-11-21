@@ -1,0 +1,9 @@
+name = "cronjob-example"
+version = "v0.1.0"
+language = "rust"
+product = "examples"
+types = ["cronjob"]
+
+[features.simple_api]
+enabled = true
+collections = [ "name1", "name2" ]

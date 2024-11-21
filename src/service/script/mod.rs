@@ -6,6 +6,7 @@ use logger::fields::FieldValue;
 use tokio::sync::watch;
 
 use crate::{definition, env, errors as merrors, plugin};
+use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 
@@ -72,6 +73,10 @@ impl plugin::service::Service for Script {
         logger::fields![
             "kind".to_string() => FieldValue::String(self.kind().to_string()),
         ]
+    }
+
+    fn mode(&self) -> ServiceExecutionMode {
+        ServiceExecutionMode::NonBlock
     }
 
     async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {

@@ -12,6 +12,7 @@ pub trait Service: ServiceClone + Lifecycle {
     fn kind(&self) -> definition::ServiceKind;
     fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
     fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
+    fn mode(&self) -> ServiceExecutionMode;
 
     async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()>;
     async fn stop(&self, ctx: &Context);
@@ -34,4 +35,10 @@ impl Clone for Box<dyn Service> {
     fn clone(&self) -> Self {
         ServiceClone::clone_box(self.as_ref())
     }
+}
+
+#[derive(PartialEq)]
+pub enum ServiceExecutionMode {
+    Block,
+    NonBlock,
 }

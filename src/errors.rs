@@ -10,11 +10,12 @@ pub enum Error {
     EmptyServiceFound,
     FeatureNotFound(String),
     InternalServiceError(String),
-    UnsupportedServicesCombination,
+    UnsupportedServicesExecutionMode,
     ServiceKindUninitialized(definition::ServiceKind),
     NotFound(String),
-    LoadFeatureDefinition(String, String),
+    DefinitionLoadingFailure(String, String),
     FeatureDisabled(String),
+    BuilderFailed(String),
 }
 
 impl Error {
@@ -26,11 +27,12 @@ impl Error {
             Error::EmptyServiceFound => "cannot execute without a service implementation".to_string(),
             Error::FeatureNotFound(s) => format!("feature {} not found", s),
             Error::InternalServiceError(s) => format!("internal service error: {}", s),
-            Error::UnsupportedServicesCombination => "unsupported services combination".to_string(),
+            Error::UnsupportedServicesExecutionMode => "unsupported services execution mode".to_string(),
             Error::ServiceKindUninitialized(s) => format!("service type uninitialized: {}", s),
             Error::NotFound(s) => format!("not found: {}", s),
-            Error::LoadFeatureDefinition(s, msg) => format!("feature definition loading '{}' failed: {}", s, msg),
+            Error::DefinitionLoadingFailure(s, msg) => format!("definition loading from '{}' failed: {}", s, msg),
             Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
+            Error::BuilderFailed(s) => format!("builder failed: {}", s),
         }
     }
 }

@@ -12,3 +12,4 @@ mod grpc;
 // Forward some declarations for services
 pub use futures::lock::Mutex;
 pub use logger;
+pub use tokio::sync::watch;
