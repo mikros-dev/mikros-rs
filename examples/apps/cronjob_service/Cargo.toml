@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.83"
+example = { path = "../../features/example" }
 mikros = { path = "../../../" }
 cronjob = { path = "../../services/cronjob" }
 simple_api = { path = "../../features/simple_api" }
