@@ -97,6 +97,10 @@ impl Clone for Box<dyn Feature> {
 #[macro_export]
 macro_rules! impl_feature_public_api {
     ($api_trait:ident, $api_struct:ident, $feature_name:expr) => {
+        pub fn new() -> Box<dyn mikros::plugin::feature::Feature> {
+            Box::new($api_struct::default())
+        }
+
         pub async fn execute_on<F>(
             ctx: &Context,
             f: F,

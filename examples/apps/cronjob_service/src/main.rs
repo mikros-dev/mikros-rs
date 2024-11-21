@@ -25,7 +25,7 @@ async fn main() {
 
     let svc = ServiceBuilder::default()
         .custom(c)
-        .with_features(simple_api::features())
+        .with_features(vec![simple_api::new(), example::new()])
         .build();
 
     match svc {

@@ -14,10 +14,6 @@ pub trait ExampleAPI {
     fn do_something(&self);
 }
 
-pub fn features() -> Vec<Box<dyn plugin::feature::Feature>> {
-    vec![Box::new(Example::default())]
-}
-
 #[derive(Clone, Default)]
 pub(crate) struct Example {
     definitions: Definitions

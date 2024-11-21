@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use logger::fields::FieldValue;
 
-use crate::definition::Definitions;
-use crate::env::Env;
-use crate::{errors as merrors, impl_feature_public_api};
-use crate::plugin;
-use crate::service::context::Context;
+use mikros::definition::Definitions;
+use mikros::env::Env;
+use mikros::{errors as merrors, impl_feature_public_api};
+use mikros::{plugin, logger};
+use mikros::service::context::Context;
 
 /// The feature public API.
 pub trait ExampleAPI {
