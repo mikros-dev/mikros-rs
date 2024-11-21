@@ -14,7 +14,7 @@ use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
 use crate::definition::{Definitions, ServiceKind, CustomServiceInfo};
-use crate::{errors as merrors, features, plugin};
+use crate::{errors as merrors, plugin};
 use crate::env::Env;
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::builder::ServiceBuilder;
@@ -36,7 +36,7 @@ impl Service {
         let (shutdown_tx, _) = watch::channel(());
         let envs = Env::load(&definitions)?;
 
-        let mut features = features::register_features();
+        let mut features = vec![];
         for f in builder.features.clone() {
             features.push(f);
         }
