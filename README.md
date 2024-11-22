@@ -1,3 +1,7 @@
+![status](resources/badges/status.svg)
+![coverage](resources/badges/coverage.svg)
+![license](resources/badges/license.svg)
+
 # mikros-rs
 
 ## About
