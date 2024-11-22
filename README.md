@@ -93,7 +93,7 @@ It must have a `service.toml` file with the following content:
 ```toml
 name = "script-example"
 types = ["script"]
-version = "v1.0.0"
+version = "v0.1.0"
 language = "rust"
 product = "Matrix"
 ```
