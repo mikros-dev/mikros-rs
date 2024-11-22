@@ -79,4 +79,6 @@ impl ExampleAPI for Example {
     }
 }
 
+// Use this macro to export a public API equal for all features, allowing the
+// services to use the same syntax while accessing them.
 impl_feature_public_api!(ExampleAPI, Example, "simple_api");
