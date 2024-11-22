@@ -14,10 +14,15 @@ standalone applications that execute its task and finishes.
 
 Currently, it has support for the following kind of applications:
 
-* gRPC: an application with an API defined from a [protobuf](https://protobuf.dev) file.
-* HTTP: an HTTP server-type application.
-* native: a general-purpose application, without a defined API, with the ability to execute any code for long periods
-* script: also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
+* [gRPC](docs/service_grpc.md): an application with an API defined from a [protobuf](https://protobuf.dev) file.
+* [HTTP](docs/service_http.md): an HTTP server-type application.
+* [native](docs/service_native.md): a general-purpose application, without a defined API, with the ability to execute any code for long periods
+* [script](docs/service_script.md): also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
+
+### Documentation
+
+A more detailed documentation about the framework API and its features can be
+accessed at the [docs](docs/mikros.md) directory.
 
 ### Service
 
@@ -125,6 +130,7 @@ using service definitions.
 * Enable features and services to use the same env system that the core uses.
 * Improve unit tests.
 * Full compatibility between go and rust gRPC services.
+* Allow using the service definitions file for custom service definitions.
 
 ## License
 
