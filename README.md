@@ -100,19 +100,19 @@ product = "Matrix"
 When executed, it outputs the following (with a different time according the execution):
 
 ```bash
-2024-11-21 20:24:50.215638 -03:00	INFO	service starting	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490215,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.215953 -03:00	INFO	starting features	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490215,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
+2024-11-21 22:08:04.415725 -03:00	INFO	service starting	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684415,"svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416153 -03:00	INFO	starting features	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
 lifecycle on_start
-2024-11-21 20:24:50.215974 -03:00	INFO	service resources	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490215,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.215993 -03:00	INFO	service is running	{"svc.language":"rust","local.ts":1732231490,"kind":"script","local.ts_ms":1732231490215,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216023 -03:00	INFO	Stop script service	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216043 -03:00	DEBUG	sending shutdown signal for service tasks	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216043 -03:00	DEBUG	starting service task	{"svc.language":"rust","local.ts":1732231490,"task_name":"script","local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216148 -03:00	INFO	Start script service	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216168 -03:00	DEBUG	finishing service task	{"svc.language":"rust","local.ts":1732231490,"task_name":"script","local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
-2024-11-21 20:24:50.216186 -03:00	DEBUG	service task finished	{"svc.language":"rust","local.ts":1732231490,"task_name":"script","local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
+2024-11-21 22:08:04.416174 -03:00	INFO	service resources	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416194 -03:00	INFO	service is running	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"kind":"script","svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416218 -03:00	INFO	Stop script service	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416234 -03:00	DEBUG	sending shutdown signal for service tasks	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416250 -03:00	DEBUG	starting service task	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416351 -03:00	INFO	Start script service	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416370 -03:00	DEBUG	finishing service task	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
+2024-11-21 22:08:04.416388 -03:00	DEBUG	service task finished	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
 lifecycle on_finish
-2024-11-21 20:24:50.216234 -03:00	INFO	service stopped	{"svc.language":"rust","local.ts":1732231490,"local.ts_ms":1732231490216,"svc.name":"native-example","svc.product":"examples","svc.version":"v0.1.0"}
+2024-11-21 22:08:04.416436 -03:00	INFO	service stopped	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
 ```
 
 For more examples, including how to create new features and new service kind,
