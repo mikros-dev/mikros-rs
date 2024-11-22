@@ -19,6 +19,11 @@ Currently, it has support for the following kind of applications:
 * native: a general-purpose application, without a defined API, with the ability to execute any code for long periods
 * script: also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
 
+### Documentation
+
+A more detailed documentation about the framework API and its features can be
+accessed at the [docs](docs/mikros.md) directory.
+
 ### Service
 
 Service, here, is considered an application that may or may not remain running
@@ -125,6 +130,7 @@ using service definitions.
 * Enable features and services to use the same env system that the core uses.
 * Improve unit tests.
 * Full compatibility between go and rust gRPC services.
+* Allow using the service definitions file for custom service definitions.
 
 ## License
 
