@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::str::FromStr;
-
 use serde::de::DeserializeOwned;
 use validator::{ValidateArgs};
 
@@ -28,6 +27,7 @@ pub struct Definitions {
     features: Option<HashMap<String, serde_json::Value>>,
     services: Option<HashMap<String, serde_json::Value>>,
     clients: Option<HashMap<String, Client>>,
+    service: Option<serde_json::Value>,
 
     #[serde(deserialize_with = "service::deserialize_services")]
     pub types: Vec<service::Service>,
@@ -138,14 +138,7 @@ impl Definitions {
     where
         T: DeserializeOwned,
     {
-        if let Some(d) = self.feature(feature) {
-            return match serde_json::from_value::<T>(d.clone()) {
-                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(feature.to_string(), e.to_string())),
-                Ok(defs) => Ok(Some(defs)),
-            }
-        }
-
-        Ok(None)
+        self.decode(self.feature(feature), feature)
     }
 
     fn feature(&self, feature: &str) -> Option<serde_json::Value> {
@@ -159,14 +152,7 @@ impl Definitions {
     where
         T: DeserializeOwned,
     {
-        if let Some(d) = self.service(&service_kind) {
-            return match serde_json::from_value::<T>(d.clone()) {
-                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(service_kind.to_string(), e.to_string())),
-                Ok(defs) => Ok(Some(defs)),
-            }
-        }
-
-        Ok(None)
+        self.decode(self.service(&service_kind), &service_kind.to_string())
     }
 
     fn service(&self, service_kind: &ServiceKind) -> Option<serde_json::Value> {
@@ -176,8 +162,35 @@ impl Definitions {
         }
     }
 
+    fn decode<T>(&self, data: Option<serde_json::Value>, name: &str) -> merrors::Result<Option<T>>
+    where
+        T: DeserializeOwned,
+    {
+        if let Some(d) = data {
+            return match serde_json::from_value::<T>(d.clone()) {
+                Ok(defs) => Ok(Some(defs)),
+                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(name.to_string(), e.to_string())),
+            }
+        }
+
+        Ok(None)
+    }
+
     pub fn client(&self, name: &str) -> Option<Client> {
         self.clients.clone()?.get(name).cloned()
+    }
+
+    pub fn custom_settings<T>(&self) -> merrors::Result<Option<T>>
+    where
+        T: DeserializeOwned,
+    {
+        match &self.service {
+            None => Ok(None),
+            Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
+                Err(e) => Err(merrors::Error::DefinitionLoadingFailure("custom_settings".to_string(), e.to_string())),
+                Ok(settings) => Ok(Some(settings)),
+            }
+        }
     }
 }
 
@@ -325,5 +338,27 @@ mod tests {
         assert!(address.is_some());
         assert_eq!(address.clone().unwrap().host, "127.0.0.1");
         assert_eq!(address.unwrap().port, 7071);
+    }
+
+    #[test]
+    fn test_load_service_custom_settings() {
+        let filename = assets_path().join("definitions/service.toml.ok_custom_settings");
+        let defs = Definitions::new(filename.to_str(), None);
+        assert!(defs.is_ok());
+
+        let defs = defs.unwrap();
+
+        #[derive(Deserialize)]
+        struct Service {
+            direction: String,
+            ipc_port: i32,
+        }
+
+        let s: merrors::Result<Option<Service>> = defs.custom_settings();
+        assert!(s.is_ok());
+
+        let settings = s.unwrap().unwrap();
+        assert_eq!(settings.direction, "forward");
+        assert_eq!(settings.ipc_port, 9991);
     }
 }

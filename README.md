@@ -134,7 +134,6 @@ using service definitions.
 * Enable features and services to use the same env system that the core uses.
 * Improve unit tests.
 * Full compatibility between go and rust gRPC services.
-* Allow using the service definitions file for custom service definitions.
 
 ## License
 
