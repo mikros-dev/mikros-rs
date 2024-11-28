@@ -1,0 +1,9 @@
+name = "my-service"
+types = ["grpc"]
+version = "v1.0.0"
+language = "rust"
+product = "incredible-product"
+
+[service]
+direction = "forward"
+ipc_port = 9991

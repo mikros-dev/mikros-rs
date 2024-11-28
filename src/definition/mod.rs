@@ -28,6 +28,7 @@ pub struct Definitions {
     features: Option<HashMap<String, serde_json::Value>>,
     services: Option<HashMap<String, serde_json::Value>>,
     clients: Option<HashMap<String, Client>>,
+    service: Option<serde_json::Value>,
 
     #[serde(deserialize_with = "service::deserialize_services")]
     pub types: Vec<service::Service>,
@@ -179,6 +180,19 @@ impl Definitions {
     pub fn client(&self, name: &str) -> Option<Client> {
         self.clients.clone()?.get(name).cloned()
     }
+
+    pub fn custom_settings<T>(&self) -> merrors::Result<Option<T>>
+    where
+        T: DeserializeOwned,
+    {
+        match &self.service {
+            None => Ok(None),
+            Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
+                Err(e) => Err(merrors::Error::DefinitionLoadingFailure("custom_settings".to_string(), e.to_string())),
+                Ok(settings) => Ok(Some(settings)),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -325,5 +339,27 @@ mod tests {
         assert!(address.is_some());
         assert_eq!(address.clone().unwrap().host, "127.0.0.1");
         assert_eq!(address.unwrap().port, 7071);
+    }
+
+    #[test]
+    fn test_load_service_custom_settings() {
+        let filename = assets_path().join("definitions/service.toml.ok_custom_settings");
+        let defs = Definitions::new(filename.to_str(), None);
+        assert!(defs.is_ok());
+
+        let defs = defs.unwrap();
+
+        #[derive(Deserialize)]
+        struct Service {
+            direction: String,
+            ipc_port: i32,
+        }
+
+        let s: merrors::Result<Option<Service>> = defs.custom_settings();
+        assert!(s.is_ok());
+
+        let settings = s.unwrap().unwrap();
+        assert_eq!(settings.direction, "forward");
+        assert_eq!(settings.ipc_port, 9991);
     }
 }
