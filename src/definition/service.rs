@@ -1,4 +1,5 @@
 use std::fmt::Formatter;
+
 use serde::de::{Deserializer, Visitor, Error as SerdeError};
 use serde::{Deserialize, de::IntoDeserializer};
 
@@ -7,7 +8,7 @@ use crate::definition::ServiceKind;
 #[derive(Debug, Clone)]
 pub struct Service(pub ServiceKind, pub Option<i32>);
 
-impl<'a> serde::Deserialize<'a> for Service {
+impl<'a> Deserialize<'a> for Service {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'a>
@@ -66,7 +67,7 @@ mod tests {
     use super::*;
 
     // Wrapper struct to deserialize from TOML
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, serde_derive::Deserialize)]
     struct Config {
         #[serde(deserialize_with = "deserialize_services")]
         types: Vec<Service>,

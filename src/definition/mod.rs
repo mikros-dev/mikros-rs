@@ -33,9 +33,19 @@ pub struct Definitions {
     pub types: Vec<service::Service>,
 }
 
-#[derive(serde_derive::Deserialize, Debug)]
+#[derive(serde_derive::Deserialize, Debug, Clone)]
 pub struct Log {
-    pub level: String
+    pub level: String,
+    pub local_timestamp: bool,
+}
+
+impl Default for Log {
+    fn default() -> Self {
+        Log {
+            level: "info".to_string(),
+            local_timestamp: true,
+        }
+    }
 }
 
 #[derive(serde_derive::Deserialize, Debug, Clone)]
@@ -130,6 +140,13 @@ impl Definitions {
         match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
             None => Err(merrors::Error::NotFound(format!("could not find service kind '{}'", kind)))
+        }
+    }
+
+    pub(crate) fn log(&self) -> Log {
+        match &self.log {
+            Some(l) => l.clone(),
+            None => Log::default()
         }
     }
 

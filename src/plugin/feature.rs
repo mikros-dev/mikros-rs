@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::definition::Definitions;
@@ -51,7 +50,7 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
 
     /// Returns internal information about the feature to be logged when the service
     /// is being initialized.
-    fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
+    fn info(&self) -> serde_json::Value;
 
     /// Returns if the feature is currently enabled or not.
     fn is_enabled(&self) -> bool;
@@ -90,7 +89,7 @@ impl Clone for Box<dyn Feature> {
 }
 
 /// This macro adds APIs to the feature allowing it to be used by services
-/// in a easy way.
+/// in an easy way.
 ///
 /// The execute_on function receives a closure that will be executed in the
 /// feature, if it is enabled.

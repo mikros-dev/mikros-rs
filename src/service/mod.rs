@@ -8,13 +8,14 @@ pub mod script;
 
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use tokio::signal;
 use tokio::sync::watch;
 use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
 use crate::definition::{Definitions, ServiceKind, CustomServiceInfo};
-use crate::{errors as merrors, plugin};
+use crate::{errors as merrors, logger, plugin};
 use crate::env::Env;
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::builder::ServiceBuilder;
@@ -66,11 +67,15 @@ impl Service {
     }
 
     fn start_logger(defs: &Definitions) -> Arc<logger::Logger> {
-        Arc::new(logger::builder::LoggerBuilder::default()
-            .with_field("svc.name", logger::fields::FieldValue::String(defs.name.clone()))
-            .with_field("svc.version", logger::fields::FieldValue::String(defs.version.clone()))
-            .with_field("svc.product", logger::fields::FieldValue::String(defs.product.clone()))
-            .with_field("svc.language", logger::fields::FieldValue::String(defs.language.clone()))
+        let log = defs.log();
+
+        Arc::new(logger::builder::LoggerBuilder::new()
+            .with_level(log.level.parse::<logger::Level>().unwrap_or(logger::Level::Info))
+            .with_local_timestamp(log.local_timestamp)
+            .with_field("svc.name", &defs.name)
+            .with_field("svc.version", &defs.version)
+            .with_field("svc.product", &defs.product)
+            .with_field("svc.language", &defs.language)
             .build())
     }
 
@@ -145,14 +150,13 @@ impl Service {
     }
 
     async fn print_service_resources(&self) {
-        let mut info: HashMap<String, logger::fields::FieldValue> = HashMap::new();
+        let mut info: HashMap<String, serde_json::Value> = HashMap::new();
 
         for feature in self.context.features.lock().await.iter() {
-            let i = feature.info();
-            info.extend(i.iter().map(|(k, v)| (k.clone(), v.clone())));
+            info.insert(feature.name().to_string(), feature.info());
         }
 
-        self.logger.infof("service resources", info);
+        self.logger.infof("service resources", serde_json::Value::Object(info.into_iter().collect()));
     }
 
     async fn run(&mut self) -> merrors::Result<()> {
@@ -170,9 +174,9 @@ impl Service {
             self.logger.infof("service is running", svc.info());
 
             let handle = task::spawn(async move {
-                context.logger_ref().debugf("starting service task", logger::fields![
-                    "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
-                ]);
+                context.logger_ref().debugf("starting service task", serde_json::json!({
+                    "task_name": svc.kind().to_string(),
+                }));
 
                 if let Err(e) = svc.run(&context, shutdown_rx.clone()).await {
                     let _ = tx.send(e).await;
@@ -181,16 +185,15 @@ impl Service {
 
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
-                        context.logger_ref().debugf("finishing service task", logger::fields![
-                            "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
-                        ]);
-
+                        context.logger_ref().debugf("finishing service task", serde_json::json!({
+                            "task_name": svc.kind().to_string(),
+                        }));
                     }
                 }
 
-                context.logger_ref().debugf("service task finished", logger::fields![
-                    "task_name" => logger::fields::FieldValue::String(svc.kind().to_string()),
-                ]);
+                context.logger_ref().debugf("service task finished", serde_json::json!({
+                    "task_name": svc.kind().to_string(),
+                }));
             });
 
             self.handles.push(handle);
