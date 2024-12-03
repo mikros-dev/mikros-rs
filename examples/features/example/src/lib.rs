@@ -1,13 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::sync::Arc;
-
-use logger::fields::FieldValue;
 
 use mikros::definition::Definitions;
 use mikros::env::Env;
-use mikros::{errors as merrors, impl_feature_public_api};
-use mikros::{plugin, logger};
+use mikros::{errors as merrors, impl_feature_public_api, plugin, serde_json};
 use mikros::service::context::Context;
 
 /// The feature public API.
@@ -24,10 +20,10 @@ impl plugin::feature::Feature for Example {
         "example"
     }
 
-    fn info(&self) -> HashMap<String, FieldValue> {
-        logger::fields![
-            "test" => FieldValue::String("Hello world".to_string()),
-        ]
+    fn info(&self) -> serde_json::Value {
+        serde_json::json!({
+            "test": "Hello world".to_string(),
+        })
     }
 
     fn is_enabled(&self) -> bool {

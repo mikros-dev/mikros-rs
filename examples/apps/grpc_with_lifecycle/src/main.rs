@@ -5,7 +5,7 @@ pub mod helloworld {
 }
 
 use mikros::service::{builder::ServiceBuilder, context, lifecycle};
-use mikros::{features, link_grpc_service};
+use mikros::link_grpc_service;
 use tonic::transport::Channel;
 use tonic::{Request, Response, Status};
 
@@ -45,7 +45,7 @@ impl Greeter for MyGreeter {
             .say_hello(reply)
             .await?;
 
-        let _ = features::example::execute_on(&ctx, |api| {
+        let _ = example::execute_on(&ctx, |api| {
             api.do_something();
             Ok(())
         })
