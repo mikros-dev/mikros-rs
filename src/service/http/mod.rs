@@ -1,10 +1,8 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::Router;
 use futures::lock::Mutex;
-use logger::fields::FieldValue;
 use tokio::net::TcpListener;
 use tokio::sync::watch::Receiver;
 
@@ -93,11 +91,11 @@ impl plugin::service::Service for Http {
         Ok(())
     }
 
-    fn info(&self) -> HashMap<String, FieldValue> {
-        logger::fields![
-            "svc.port" => FieldValue::Number(self.port as i64),
-            "svc.mode" => FieldValue::String(definition::ServiceKind::Http.to_string()),
-        ]
+    fn info(&self) -> serde_json::Value {
+        serde_json::json!({
+            "svc.port": self.port,
+            "svc.mode": definition::ServiceKind::Http.to_string(),
+        })
     }
 
     fn mode(&self) -> ServiceExecutionMode {

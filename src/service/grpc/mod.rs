@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use futures::lock::Mutex;
 use http::{request::Request, response::Response};
-use logger::fields::FieldValue;
 use tokio::sync::watch;
 use tonic::body::BoxBody;
 use tonic::server::NamedService;
@@ -104,11 +102,11 @@ where
         Ok(())
     }
 
-    fn info(&self) -> HashMap<String, FieldValue> {
-        logger::fields![
-            "svc.port" => FieldValue::Number(self.port as i64),
-            "svc.mode" => FieldValue::String(definition::ServiceKind::Grpc.to_string()),
-        ]
+    fn info(&self) -> serde_json::Value {
+        serde_json::json!({
+            "svc.port": self.port,
+            "svc.mode": definition::ServiceKind::Grpc.to_string(),
+        })
     }
 
     fn mode(&self) -> plugin::service::ServiceExecutionMode {

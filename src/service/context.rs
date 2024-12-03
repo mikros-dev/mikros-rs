@@ -4,7 +4,7 @@ use futures::lock::Mutex;
 
 use crate::definition::Definitions;
 use crate::env::Env;
-use crate::{errors as merrors, plugin};
+use crate::{errors as merrors, logger, plugin};
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.

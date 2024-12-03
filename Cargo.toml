@@ -6,12 +6,13 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.83"
 axum = "0.7.7"
+chrono = "0.4.38"
 env-settings = "0.1.11"
 env-settings-derive = "0.1.11"
 env-settings-utils = "0.1.11"
 futures = "0.3.31"
 http = "1.1.0"
-logger = { git = "https://github.com/rsfreitas/logger" }
+indexmap = { version = "2.7.0", features = ["serde"]}
 prost = "0.13.3"
 serde = "1.0.214"
 serde_derive = "1.0.214"
@@ -21,4 +22,6 @@ toml = "0.8.19"
 tonic = { version = "0.12.3", features = ["transport"]}
 tower = "0.5.1"
 tower-service = "0.3.3"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 validator = { version = "0.19.0", features = ["derive"] }
