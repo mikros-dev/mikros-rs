@@ -109,19 +109,13 @@ product = "Matrix"
 When executed, it outputs the following (with a different time according the execution):
 
 ```bash
-2024-11-21 22:08:04.415725 -03:00	INFO	service starting	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684415,"svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416153 -03:00	INFO	starting features	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
-lifecycle on_start
-2024-11-21 22:08:04.416174 -03:00	INFO	service resources	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416194 -03:00	INFO	service is running	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"kind":"script","svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416218 -03:00	INFO	Stop script service	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416234 -03:00	DEBUG	sending shutdown signal for service tasks	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416250 -03:00	DEBUG	starting service task	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416351 -03:00	INFO	Start script service	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416370 -03:00	DEBUG	finishing service task	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
-2024-11-21 22:08:04.416388 -03:00	DEBUG	service task finished	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"task_name":"script","svc.name":"script-example","svc.product":"Matrix"}
-lifecycle on_finish
-2024-11-21 22:08:04.416436 -03:00	INFO	service stopped	{"local.ts":1732237684,"svc.version":"v0.1.0","svc.language":"rust","local.ts_ms":1732237684416,"svc.name":"script-example","svc.product":"Matrix"}
+{"timestamp":"2024-12-04T07:09:02.173335-03:00","level":"INFO","message":"service starting","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust"}
+{"timestamp":"2024-12-04T07:09:02.173715-03:00","level":"INFO","message":"starting features","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust"}
+{"timestamp":"2024-12-04T07:09:02.173840-03:00","level":"INFO","message":"service resources","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust","example":{"test":"Hello world"}}
+{"timestamp":"2024-12-04T07:09:02.173919-03:00","level":"INFO","message":"service is running","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust","kind":"script"}
+{"timestamp":"2024-12-04T07:09:02.174001-03:00","level":"INFO","message":"Stop script service","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust"}
+{"timestamp":"2024-12-04T07:09:02.174056-03:00","level":"INFO","message":"Start script service","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust"}
+{"timestamp":"2024-12-04T07:09:02.174296-03:00","level":"INFO","message":"service stopped","svc.name":"script-example","svc.version":"v0.1.0","svc.product":"Matrix","svc.language":"rust"}
 ```
 
 For more examples, including how to create new features and new service kind,
@@ -129,8 +123,6 @@ you can check the [examples](examples) directory.
 
 ## Roadmap
 
-* Improve logger to use better structured log system and to set the log level
-using service definitions.
 * Enable features and services to use the same env system that the core uses.
 * Improve unit tests.
 * Full compatibility between go and rust gRPC services.
