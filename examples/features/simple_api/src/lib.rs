@@ -1,13 +1,11 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use mikros::env::Env;
-use mikros::{errors as merrors, impl_feature_public_api};
-use mikros::logger;
+use mikros::{errors as merrors, impl_feature_public_api, serde_json};
 use mikros::plugin;
 use mikros::service::context::Context;
-use serde::Deserialize;
+use serde_derive::Deserialize;
 
 /// The feature public API.
 pub trait ExampleAPI {
@@ -60,12 +58,12 @@ impl plugin::feature::Feature for Example {
         Some(self)
     }
 
-    fn info(&self) -> HashMap<String, logger::fields::FieldValue> {
+    fn info(&self) -> serde_json::Value {
         let collections = self.definitions.collections.join(",");
-        logger::fields![
-            "test" => logger::fields::FieldValue::String("Hello world".to_string()),
-            "collections" => logger::fields::FieldValue::String(collections),
-        ]
+        serde_json::json!({
+            "test": "Hello world".to_string(),
+            "collections": collections,
+        })
     }
 
     async fn cleanup(&self) {

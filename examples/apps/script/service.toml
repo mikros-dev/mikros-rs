@@ -1,5 +1,5 @@
-name = "native-example"
+name = "script-example"
 version = "v0.1.0"
 language = "rust"
-product = "examples"
+product = "Matrix"
 types = ["script"]

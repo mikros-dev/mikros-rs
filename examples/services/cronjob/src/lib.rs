@@ -1,12 +1,10 @@
 pub mod builder;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use mikros::definition::ServiceKind;
 use mikros::env::Env;
-use mikros::logger::fields::FieldValue;
-use mikros::{errors as merrors, plugin, Mutex};
+use mikros::{errors as merrors, plugin, Mutex, serde_json};
 use mikros::service::context::Context;
 use mikros::service::lifecycle::Lifecycle;
 use serde_derive::Deserialize;
@@ -46,8 +44,15 @@ impl plugin::service::Service for Cronjob {
         ServiceKind::Custom("cronjob".into())
     }
 
-    fn info(&self) -> HashMap<String, FieldValue> {
-        HashMap::new()
+    fn info(&self) -> serde_json::Value {
+        match self.definitions {
+            Some(ref d) => serde_json::json!({
+                "frequency": d.frequency,
+                "days": d.days,
+                "scheduled_times": d.scheduled_times,
+            }),
+            None => serde_json::json!({}),
+        }
     }
 
     fn initialize(&mut self, _envs: Arc<Env>, definitions: Arc<mikros::definition::Definitions>) -> merrors::Result<()> {

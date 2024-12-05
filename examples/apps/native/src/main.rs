@@ -8,7 +8,7 @@ async fn main() {
     let s = AppService::new();
     let svc = ServiceBuilder::default()
         .native(Box::new(s))
-        .with_features(simple_api::features())
+        .with_features(vec![simple_api::new(), example::new()])
         .build();
 
     match svc {

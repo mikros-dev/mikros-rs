@@ -1,8 +1,6 @@
-use std::collections::HashMap;
 use std::sync::{Arc};
 
 use futures::lock::Mutex;
-use logger::fields::FieldValue;
 use tokio::sync::watch;
 
 use crate::{definition, env, errors as merrors, plugin};
@@ -69,10 +67,10 @@ impl plugin::service::Service for Script {
         Ok(())
     }
 
-    fn info(&self) -> HashMap<String, FieldValue> {
-        logger::fields![
-            "kind".to_string() => FieldValue::String(self.kind().to_string()),
-        ]
+    fn info(&self) -> serde_json::Value {
+        serde_json::json!({
+            "kind": self.kind().to_string(),
+        })
     }
 
     fn mode(&self) -> ServiceExecutionMode {

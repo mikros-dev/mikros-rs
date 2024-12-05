@@ -1,5 +1,4 @@
 use mikros::errors as merrors;
-use mikros::features::example;
 use mikros::service::context::Context;
 
 #[derive(Clone)]

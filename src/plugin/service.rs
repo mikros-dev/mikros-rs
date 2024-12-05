@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use tokio::sync::watch;
@@ -11,7 +10,7 @@ use crate::service::lifecycle::Lifecycle;
 pub trait Service: ServiceClone + Lifecycle {
     fn kind(&self) -> definition::ServiceKind;
     fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()>;
-    fn info(&self) -> HashMap<String, logger::fields::FieldValue>;
+    fn info(&self) -> serde_json::Value;
     fn mode(&self) -> ServiceExecutionMode;
 
     async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()>;

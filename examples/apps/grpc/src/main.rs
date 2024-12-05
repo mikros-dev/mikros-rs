@@ -4,7 +4,6 @@ pub mod helloworld {
     include!("generated/helloworld.rs"); // Include generated code
 }
 
-use mikros::features;
 use mikros::service::{builder::ServiceBuilder, context};
 use tonic::{Request, Response, Status};
 
@@ -33,7 +32,7 @@ impl Greeter for MyGreeter {
         ctx.logger()
             .info(format!("the inner value is: {}", self.ctx.lock().await.value).as_str());
 
-        let _ = features::example::execute_on(&ctx, |api| {
+        let _ = example::execute_on(&ctx, |api| {
             api.do_something();
             Ok(())
         })
