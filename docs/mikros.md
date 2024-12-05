@@ -142,6 +142,7 @@ as long as they have the same mode of execution (Block/NonBlock)
 Optional fields:
 
 - envs: a string array of required environment variables for the service.
+- log: an object that allows defining the service initial settings for logging.
 
 Additionally, you can use this same file for the following types of definitions:
 
@@ -150,6 +151,8 @@ the application.
 - services: a map of service definitions, to set custom service kind settings
 for the application.
 - clients: a map of client connection definitions, for dependent applications.
+- service: a structure free service definition that the service can use for
+its own settings.
 
 Example:
 
@@ -161,15 +164,22 @@ language = "rust"
 product = "my-awesome-product"
 envs = [ "CUSTOM_ENV_1" ]
 
+# Required settings for the simple_api feature
 [features.simple_api]
 enabled = true
 
+# Custom settings for connecting with the 'grpc' gRPC client
 [clients.grpc]
 host = "localhost"
 port = 7071
 
+# Required settings for the 'cronjob' service type
 [services.cronjob]
 frequency = "daily"
+
+# Custom service settings
+[service]
+max_diff_range = 100
 ```
 
 ### Environment variables
