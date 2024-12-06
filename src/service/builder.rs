@@ -28,7 +28,7 @@ pub struct ServiceBuilder {
 }
 
 impl ServiceBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             servers: HashMap::new(),
             features: Vec::new(),
@@ -215,11 +215,5 @@ impl ServiceBuilder {
     /// Builds the service to be executed.
     pub fn build(self) -> merrors::Result<Service> {
         Service::new(self)
-    }
-}
-
-impl Default for ServiceBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }
