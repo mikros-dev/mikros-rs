@@ -16,7 +16,8 @@ pub enum Error {
     DefinitionLoadingFailure(String, String),
     FeatureDisabled(String),
     BuilderFailed(String),
-    GrpcClient(String, String)
+    GrpcClient(String, String),
+    Service,
 }
 
 impl Error {
@@ -35,11 +36,13 @@ impl Error {
             Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
             Error::BuilderFailed(s) => format!("builder failed: {}", s),
             Error::GrpcClient(s, msg) => format!("grpc client '{}' error: {}", s, msg),
+            Error::Service => "service error".to_string(),
         }
     }
 }
 
 impl std::error::Error for Error {}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.description())
