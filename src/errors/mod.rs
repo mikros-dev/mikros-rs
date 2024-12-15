@@ -1,8 +1,9 @@
+use std::fmt::Formatter;
+
 use crate::definition;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
 pub enum Error {
     InvalidDefinitions(String),
     EnvironmentVariableFailure(String),
@@ -17,7 +18,6 @@ pub enum Error {
     FeatureDisabled(String),
     BuilderFailed(String),
     GrpcClient(String, String),
-    Service,
 }
 
 impl Error {
@@ -36,7 +36,6 @@ impl Error {
             Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
             Error::BuilderFailed(s) => format!("builder failed: {}", s),
             Error::GrpcClient(s, msg) => format!("grpc client '{}' error: {}", s, msg),
-            Error::Service => "service error".to_string(),
         }
     }
 }
@@ -45,6 +44,12 @@ impl std::error::Error for Error {}
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.description())
+    }
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.description())
     }
 }

@@ -217,3 +217,9 @@ impl ServiceBuilder {
         Service::new(self)
     }
 }
+
+impl Default for ServiceBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
