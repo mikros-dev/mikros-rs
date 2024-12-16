@@ -1,0 +1,13 @@
+debug = true
+
+[suffix]
+domain = "Domain"
+outbound = "Outbound"
+wire = "Wire"
+wire_input = "Request"
+wire_output = "Response"
+
+[templates.rust]
+enabled = true
+single_module = true
+module_name = "api"

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package card;
+
+option go_package = "examples/gen/go/services/card;card";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "mikros/extensions/extensions.proto";
+
+// The service entity
+message CardWire {
+  string id = 1;
+  string owner_name = 2;
+  string card_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// The service definition
+service CardService {
+  rpc CreateCard(CreateCardRequest) returns (CreateCardResponse) {
+    option (google.api.http) = {
+      post: "/card/v1/cards"
+      body: "*"
+    };
+
+    option (mikros.extensions.method_options) = {
+      http: {
+        header: "debug"
+      }
+    };
+  }
+
+  rpc GetCard(GetCardRequest) returns (GetCardResponse) {
+    option (google.api.http) = {
+      get: "/card/v1/cards/{id}"
+    };
+
+    option (mikros.extensions.method_options) = {
+      http: {
+        header: "debug"
+      }
+    };
+  }
+
+  rpc UpdateCard(UpdateCardRequest) returns (UpdateCardResponse) {
+    option (google.api.http) = {
+      put: "/card/v1/cards/{id}"
+      body: "*"
+    };
+
+    option (mikros.extensions.method_options) = {
+      http: {
+        header: "debug"
+      }
+    };
+  }
+
+  rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse) {
+    option (google.api.http) = {
+      delete: "/card/v1/cards/{id}"
+    };
+
+    option (mikros.extensions.method_options) = {
+      http: {
+        header: "debug"
+      }
+    };
+  }
+}
+
+message CreateCardRequest {
+  string owner_name = 1;
+  string card_id = 2;
+  bool debug = 3;
+}
+
+message CreateCardResponse {
+  CardWire card = 1;
+}
+
+message GetCardRequest {
+  string id = 1;
+  bool debug = 2;
+}
+
+message GetCardResponse {
+  CardWire card = 1;
+}
+
+message UpdateCardRequest {
+  string id = 1;
+  string owner_name = 2;
+  string card_id = 3;
+  bool debug = 4;
+}
+
+message UpdateCardResponse {
+  CardWire card = 1;
+}
+
+
+message DeleteCardRequest {
+  string id = 1;
+  bool debug = 2;
+}
+
+message DeleteCardResponse {
+  CardWire card = 1;
+}
