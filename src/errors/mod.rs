@@ -1,8 +1,12 @@
+use std::fmt::Formatter;
+
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
+
 use crate::definition;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
 pub enum Error {
     InvalidDefinitions(String),
     EnvironmentVariableFailure(String),
@@ -16,7 +20,9 @@ pub enum Error {
     DefinitionLoadingFailure(String, String),
     FeatureDisabled(String),
     BuilderFailed(String),
-    GrpcClient(String, String)
+    GrpcClient(String, String),
+    HeaderMissing(String),
+    InvalidHeaderValue(String),
 }
 
 impl Error {
@@ -35,13 +41,28 @@ impl Error {
             Error::FeatureDisabled(s) => format!("feature disabled: {}", s),
             Error::BuilderFailed(s) => format!("builder failed: {}", s),
             Error::GrpcClient(s, msg) => format!("grpc client '{}' error: {}", s, msg),
+            Error::HeaderMissing(s) => format!("header missing: {}", s),
+            Error::InvalidHeaderValue(s) => format!("invalid header value: {}", s),
         }
     }
 }
 
 impl std::error::Error for Error {}
+
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.description())
+    }
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.description())
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.description()).into_response()
     }
 }

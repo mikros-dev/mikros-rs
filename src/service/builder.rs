@@ -28,7 +28,7 @@ pub struct ServiceBuilder {
 }
 
 impl ServiceBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             servers: HashMap::new(),
             features: Vec::new(),

@@ -31,7 +31,7 @@ pub struct Service {
 }
 
 impl Service {
-    pub fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
+    pub(crate) fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
         let definitions = Service::load_definitions(&builder)?;
         let logger = Self::start_logger(&definitions);
         let (shutdown_tx, _) = watch::channel(());
@@ -89,13 +89,9 @@ impl Service {
     }
 
     /// Puts the service to run.
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> merrors::Result<()> {
         self.logger.info("service starting");
-
-        if let Err(e) = self.start_service().await {
-            self.logger.error(&e.to_string());
-            std::process::exit(1);
-        }
+        self.start_service().await
     }
 
     async fn start_service(&mut self) -> merrors::Result<()> {
