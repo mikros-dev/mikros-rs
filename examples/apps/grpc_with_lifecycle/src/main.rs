@@ -87,14 +87,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let greeter = Arc::new(MyGreeter::new(ctx.clone()));
     let greeter_service = GreeterServer::from_arc(greeter);
 
-    let svc = ServiceBuilder::default()
+    let mut svc = ServiceBuilder::new()
         .grpc_with_lifecycle(greeter_service, ctx.clone())
-        .build();
+        .build()?;
 
-    match svc {
-        Ok(mut svc) => svc.start().await,
-        Err(e) => panic!("{}", e.to_string()),
-    }
-
-    Ok(())
+    Ok(svc.start().await?)
 }

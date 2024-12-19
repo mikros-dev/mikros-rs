@@ -6,7 +6,7 @@ members = [
     "grpc_with_lifecycle",
     "http",
     "http_with_lifecycle",
-    "http_with_lifecycle_and_state",
+    "http_with_lifecycle_and_state", "http_with_protobuf",
     "http_with_state",
     "native",
     "script"
