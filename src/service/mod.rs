@@ -5,6 +5,7 @@ pub mod http;
 pub mod lifecycle;
 pub mod native;
 pub mod script;
+mod errors;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,7 +27,7 @@ pub struct Service {
     logger: Arc<logger::Logger>,
     servers: HashMap<String, Box<dyn plugin::service::Service>>,
     context: context::Context,
-    handles: Vec<JoinHandle<()>>,
+    handlers: Vec<JoinHandle<()>>,
     shutdown_tx: watch::Sender<()>,
 }
 
@@ -48,7 +49,7 @@ impl Service {
             logger: logger.clone(),
             context: Self::build_context(envs.clone(), logger, definitions, features)?,
             servers: builder.servers,
-            handles: Vec::new(),
+            handlers: Vec::new(),
             shutdown_tx,
         })
     }
@@ -63,7 +64,7 @@ impl Service {
             None
         };
 
-        Definitions::new(args.config_path.as_deref(), custom_info)
+        Ok(Definitions::new(args.config_path.as_deref(), custom_info)?)
     }
 
     fn start_logger(defs: &Definitions) -> Arc<logger::Logger> {
@@ -104,17 +105,17 @@ impl Service {
 
     fn validate_definitions(&self) -> merrors::Result<()> {
         if self.servers.is_empty() {
-            return Err(merrors::Error::EmptyServiceFound)
+            return Err(errors::Error::EmptyServiceFound.into());
         }
 
         // Script services should be a single service.
         if !self.has_equal_execution_modes() {
-            return Err(merrors::Error::UnsupportedServicesExecutionMode)
+            return Err(errors::Error::UnsupportedServicesExecutionMode.into());
         }
 
         for t in &self.definitions.types {
             if !self.servers.contains_key(&t.0.to_string()) {
-                return Err(merrors::Error::ServiceKindUninitialized(t.0.clone()))
+                return Err(errors::Error::ServiceKindUninitialized(t.0.clone()).into());
             }
         }
 
@@ -192,7 +193,7 @@ impl Service {
                 }));
             });
 
-            self.handles.push(handle);
+            self.handlers.push(handle);
         }
 
         // keep running until ctrl+c
@@ -236,7 +237,7 @@ impl Service {
         let _ = self.shutdown_tx.send(());
         self.logger.debug("sending shutdown signal for service tasks");
 
-        for handle in &mut self.handles {
+        for handle in &mut self.handlers {
             let _ = handle.await;
         }
 

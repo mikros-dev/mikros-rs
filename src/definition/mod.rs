@@ -1,3 +1,4 @@
+pub(crate) mod errors;
 pub mod service;
 mod validation;
 
@@ -7,9 +8,7 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::str::FromStr;
 use serde::de::DeserializeOwned;
-use validator::{ValidateArgs};
-
-use crate::errors as merrors;
+use validator::ValidateArgs;
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
@@ -37,6 +36,7 @@ pub struct Definitions {
 pub struct Log {
     pub level: String,
     pub local_timestamp: bool,
+    pub auto_log_error: bool,
 }
 
 impl Default for Log {
@@ -44,6 +44,7 @@ impl Default for Log {
         Log {
             level: "info".to_string(),
             local_timestamp: true,
+            auto_log_error: true,
         }
     }
 }
@@ -95,34 +96,26 @@ pub struct CustomServiceInfo {
 }
 
 impl Definitions {
-    pub fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> merrors::Result<Arc<Self>> {
+    pub(crate) fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> Result<Arc<Self>, errors::Error> {
         let info: Definitions = match toml::from_str(&Self::load_service_file(filename)?) {
             Ok(content) => content,
-            Err(e) => return Err(merrors::Error::InvalidDefinitions(e.to_string())),
+            Err(e) => return Err(errors::Error::MalformedToml(e.to_string())),
         };
 
-        let context = custom_info.unwrap_or_else(|| {
-            let c: CustomServiceInfo = Default::default();
-            c
-        });
-
-        if let Err(e) = info.validate_with_args(&context) {
-            return Err(merrors::Error::InvalidDefinitions(e.to_string()));
-        }
-
+        info.validate(custom_info)?;
         Ok(Arc::new(info))
     }
 
-    fn load_service_file(filename: Option<&str>) -> merrors::Result<String> {
+    fn load_service_file(filename: Option<&str>) -> Result<String, errors::Error> {
         let path = Self::get_service_file_path(filename)?;
 
         match std::fs::read_to_string(path.as_path()) {
             Ok(content) => Ok(content),
-            Err(e) => Err(merrors::Error::InvalidDefinitions(e.to_string())),
+            Err(e) => Err(errors::Error::CouldNotLoadFile(e.to_string())),
         }
     }
 
-    fn get_service_file_path(filename: Option<&str>) -> merrors::Result<std::path::PathBuf> {
+    fn get_service_file_path(filename: Option<&str>) -> Result<std::path::PathBuf, errors::Error> {
         if let Some(filename) = filename {
             return Ok(std::path::Path::new(filename).to_path_buf())
         }
@@ -132,14 +125,29 @@ impl Definitions {
                 p.push("service.toml");
                 Ok(p)
             }
-            Err(r) => Err(merrors::Error::InvalidDefinitions(r.to_string())),
+            Err(r) => Err(errors::Error::DefinitionFileNotFound(r.to_string())),
         }
     }
 
-    pub(crate) fn get_service_type(&self, kind: ServiceKind) -> merrors::Result<&service::Service> {
+    fn validate(&self, custom_info: Option<CustomServiceInfo>) -> Result<(), errors::Error> {
+        let context = custom_info.unwrap_or_else(|| {
+            let c: CustomServiceInfo = Default::default();
+            c
+        });
+
+        match self.validate_with_args(&context) {
+            Err(e) => Err(errors::Error::InvalidDefinitions(e.to_string())),
+            Ok(_) => match self.types.is_empty() {
+                true => Err(errors::Error::EmptyServiceType),
+                false => Ok(())
+            }
+        }
+    }
+
+    pub(crate) fn get_service_type(&self, kind: ServiceKind) -> Result<&service::Service, errors::Error> {
         match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
-            None => Err(merrors::Error::NotFound(format!("could not find service kind '{}'", kind)))
+            None => Err(errors::Error::ServiceNotFound(kind.to_string()))
         }
     }
 
@@ -151,7 +159,7 @@ impl Definitions {
     }
 
     /// Loads definitions from a feature.
-    pub fn load_feature<T>(&self, feature: &str) -> merrors::Result<Option<T>>
+    pub fn load_feature<T>(&self, feature: &str) -> Result<Option<T>, errors::Error>
     where
         T: DeserializeOwned,
     {
@@ -165,7 +173,7 @@ impl Definitions {
         }
     }
 
-    pub fn load_service<T>(&self, service_kind: ServiceKind) -> merrors::Result<Option<T>>
+    pub fn load_service<T>(&self, service_kind: ServiceKind) -> Result<Option<T>, errors::Error>
     where
         T: DeserializeOwned,
     {
@@ -179,14 +187,14 @@ impl Definitions {
         }
     }
 
-    fn decode<T>(&self, data: Option<serde_json::Value>, name: &str) -> merrors::Result<Option<T>>
+    fn decode<T>(&self, data: Option<serde_json::Value>, name: &str) -> Result<Option<T>, errors::Error>
     where
         T: DeserializeOwned,
     {
         if let Some(d) = data {
             return match serde_json::from_value::<T>(d.clone()) {
                 Ok(defs) => Ok(Some(defs)),
-                Err(e) => Err(merrors::Error::DefinitionLoadingFailure(name.to_string(), e.to_string())),
+                Err(e) => Err(errors::Error::CouldNotLoad(name.to_string(), e.to_string())),
             }
         }
 
@@ -197,14 +205,14 @@ impl Definitions {
         self.clients.clone()?.get(name).cloned()
     }
 
-    pub fn custom_settings<T>(&self) -> merrors::Result<Option<T>>
+    pub fn custom_settings<T>(&self) -> Result<Option<T>, errors::Error>
     where
         T: DeserializeOwned,
     {
         match &self.service {
             None => Ok(None),
             Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
-                Err(e) => Err(merrors::Error::DefinitionLoadingFailure("custom_settings".to_string(), e.to_string())),
+                Err(e) => Err(errors::Error::CouldNotLoad("custom_settings".to_string(), e.to_string())),
                 Ok(settings) => Ok(Some(settings)),
             }
         }
@@ -285,7 +293,7 @@ mod tests {
             collections: Vec<String>,
         }
 
-        let s: merrors::Result<Option<SimpleApi>> = defs.clone().load_feature("simple_api");
+        let s: Result<Option<SimpleApi>, errors::Error> = defs.clone().load_feature("simple_api");
         assert!(s.is_ok());
 
         let simple_api = s.unwrap().unwrap();
@@ -299,7 +307,7 @@ mod tests {
             host: String,
         }
 
-        let s: merrors::Result<Option<AnotherApi>> = defs.clone().load_feature("another_api");
+        let s: Result<Option<AnotherApi>, errors::Error> = defs.clone().load_feature("another_api");
         assert!(s.is_ok());
 
         let another_api = s.unwrap().unwrap();
@@ -327,7 +335,7 @@ mod tests {
             days: Vec<String>,
         }
 
-        let s: merrors::Result<Option<Cronjob>> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
+        let s: Result<Option<Cronjob>, errors::Error> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
         assert!(s.is_ok());
 
         let cronjob = s.unwrap().unwrap();
@@ -371,7 +379,7 @@ mod tests {
             ipc_port: i32,
         }
 
-        let s: merrors::Result<Option<Service>> = defs.custom_settings();
+        let s: Result<Option<Service>, errors::Error> = defs.custom_settings();
         assert!(s.is_ok());
 
         let settings = s.unwrap().unwrap();

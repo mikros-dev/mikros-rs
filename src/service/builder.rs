@@ -10,6 +10,7 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
 use crate::http::ServiceState;
+use crate::service::errors;
 use crate::service::Service;
 use crate::service::grpc::Grpc;
 use crate::service::http::Http;
@@ -46,7 +47,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Native;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Native::new(svc)));
@@ -59,7 +60,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Script;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Script::new(svc)));
@@ -81,7 +82,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new(server)));
@@ -104,7 +105,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
@@ -117,7 +118,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new(router)));
@@ -138,7 +139,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
@@ -159,7 +160,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_state(router, state)));
@@ -183,7 +184,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", kind)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
@@ -203,7 +204,7 @@ impl ServiceBuilder {
         let service_type = custom_service.kind().to_string();
 
         if self.servers.contains_key(&service_type) {
-            Self::abort(merrors::Error::BuilderFailed(format!("{} service already initialized", service_type)));
+            Self::abort(errors::Error::ServiceAlreadyInitialized(service_type.to_string()).into());
         }
 
         self.servers.insert(service_type.clone(), custom_service);

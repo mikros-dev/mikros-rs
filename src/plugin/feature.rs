@@ -56,11 +56,11 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
     fn is_enabled(&self) -> bool;
 
     /// Checks if the feature can be initialized or not.
-    fn can_be_initialized(&self, definitions: Arc<Definitions>, envs: Arc<Env>) -> merrors::Result<bool>;
+    fn can_be_initialized(&self, definitions: Arc<Definitions>, envs: Arc<Env>) -> Result<bool, merrors::Error>;
 
     /// Initializes everything the feature needs to run. Also, here is the place
     /// where, if it needs, some task should be put to execute.
-    async fn initialize(&mut self, ctx: &Context) -> merrors::Result<()>;
+    async fn initialize(&mut self, ctx: &Context) -> Result<(), merrors::Error>;
 
     /// Release resources from the feature.
     async fn cleanup(&self);
