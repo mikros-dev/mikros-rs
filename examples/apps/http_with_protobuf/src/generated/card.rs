@@ -67,6 +67,35 @@ pub struct DeleteCardResponse {
     #[prost(message, optional, tag = "1")]
     pub card: ::core::option::Option<CardWire>,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum CardType {
+    Unspecified = 0,
+    Credit = 1,
+    Debit = 2,
+}
+impl CardType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "CARD_TYPE_UNSPECIFIED",
+            Self::Credit => "CARD_TYPE_CREDIT",
+            Self::Debit => "CARD_TYPE_DEBIT",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "CARD_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "CARD_TYPE_CREDIT" => Some(Self::Credit),
+            "CARD_TYPE_DEBIT" => Some(Self::Debit),
+            _ => None,
+        }
+    }
+}
 /// Generated client implementations.
 pub mod card_service_client {
     #![allow(

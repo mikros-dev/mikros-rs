@@ -8,6 +8,12 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "mikros/extensions/extensions.proto";
 
+enum CardType {
+  CARD_TYPE_UNSPECIFIED = 0;
+  CARD_TYPE_CREDIT = 1;
+  CARD_TYPE_DEBIT = 2;
+}
+
 // The service entity
 message CardWire {
   string id = 1;
@@ -99,7 +105,6 @@ message UpdateCardRequest {
 message UpdateCardResponse {
   CardWire card = 1;
 }
-
 
 message DeleteCardRequest {
   string id = 1;

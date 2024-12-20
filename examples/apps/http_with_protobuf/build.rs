@@ -8,12 +8,12 @@ fn main() {
             "::prost_wkt_types::Timestamp"
         )
         .compile_protos(
-            &["proto/helloworld.proto"],
+            &["proto/card.proto"],
             &["proto", "plugin"],
         )
         .unwrap_or_else(|e| panic!("Failed to compile protos: {:?}", e));
 
     // Set files that trigger this build process if changed.
-    println!("cargo:rerun-if-changed=proto/helloworld.proto");
+    println!("cargo:rerun-if-changed=proto/card.proto");
     println!("cargo:rerun-if-changed=protoc-gen-mikros-extensions.toml");
 }

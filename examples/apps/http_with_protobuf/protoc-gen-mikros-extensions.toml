@@ -11,3 +11,5 @@ wire_output = "Response"
 enabled = true
 single_module = true
 module_name = "api"
+run_rustfmt = true
+fmt_edition = "2021"

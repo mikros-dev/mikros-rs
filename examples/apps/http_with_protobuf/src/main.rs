@@ -5,7 +5,7 @@ mod card {
 
 use std::sync::Arc;
 use std::collections::HashMap;
-
+use mikros::errors::ServiceError;
 use mikros::service::{builder::ServiceBuilder, context};
 use tonic::{Request, Response, Status};
 
@@ -44,7 +44,7 @@ impl card::card_service_server::CardService for Service {
 
         let request = request.into_inner();
         match self.cards.lock().await.get(&request.id) {
-            None => Err(Status::not_found("card not found")),
+            None => Err(ServiceError::not_found(ctx.clone()).into()),
             Some(card) => {
                 Ok(Response::new(card::GetCardResponse{
                     card: Some(card.clone()),
@@ -58,11 +58,8 @@ impl card::card_service_server::CardService for Service {
         ctx.logger().info("update_card RPC called");
 
         let request = request.into_inner();
-
         match self.cards.lock().await.get_mut(&request.id) {
-            None => {
-                Err(Status::not_found("not found"))
-            }
+            None => Err(ServiceError::not_found(ctx.clone()).into()),
             Some(card) => {
                 card.card_id = request.card_id;
                 card.owner_name = request.owner_name;
@@ -82,7 +79,7 @@ impl card::card_service_server::CardService for Service {
         let request = request.into_inner();
         let card = self.cards.lock().await.remove(&request.id);
         if let None = card {
-            return Err(Status::not_found("not found"))
+            return Err(ServiceError::not_found(ctx.clone()).into());
         }
 
         Ok(Response::new(card::DeleteCardResponse{
