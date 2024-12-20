@@ -12,36 +12,36 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub enum Error {
     Internal(String),
-    NotFound(String),
+    NotFound,
     InvalidArguments(String),
     PreconditionFailed(String),
     RPC(String, String),
     Custom(String),
-    PermissionDenied(String),
+    PermissionDenied,
 }
 
 impl Error {
     fn description(&self) -> String {
         match self {
             Error::Internal(msg) => format!("internal error: {}", msg),
-            Error::NotFound(s) => format!("not found: {}", s),
+            Error::NotFound => "not found".to_string(),
             Error::InvalidArguments(s) => format!("invalid arguments: {}", s),
             Error::PreconditionFailed(s) => format!("precondition failed: {}", s),
             Error::RPC(to, msg) => format!("RPC to '{}' failed: {}", to, msg),
             Error::Custom(msg) => format!("service error: {}", msg),
-            Error::PermissionDenied(msg) => format!("permission denied: {}", msg),
+            Error::PermissionDenied =>  "no permission to access the service".to_string(),
         }
     }
 
     fn kind(&self) -> String {
         match self {
             Error::Internal(_) => "InternalError".to_string(),
-            Error::NotFound(_) => "NotFoundError".to_string(),
+            Error::NotFound => "NotFoundError".to_string(),
             Error::InvalidArguments(_) => "ValidationError".to_string(),
             Error::PreconditionFailed(_) => "ConditionError".to_string(),
             Error::RPC(_, _) => "RPCError".to_string(),
             Error::Custom(_) => "CustomError".to_string(),
-            Error::PermissionDenied(_) => "PermissionError".to_string(),
+            Error::PermissionDenied => "PermissionError".to_string(),
         }
     }
 }
@@ -97,6 +97,8 @@ impl ServiceError {
         None
     }
 
+    /// Sets that the current error is related to an unexpected internal
+    /// service behavior.
     pub fn internal(ctx: Arc<Context>, msg: &str) -> Self {
         Self::new(
             ctx,
@@ -104,11 +106,67 @@ impl ServiceError {
         )
     }
 
+    /// Sets that the current error is related to some data or resource not
+    /// being found by the service.
+    pub fn not_found(ctx: Arc<Context>) -> Self {
+        Self::new(
+            ctx,
+            Error::NotFound,
+        )
+    }
+
+    /// Sets that the current error is related to an argument that didn't
+    /// follow validation rules.
+    pub fn invalid_arguments(ctx: Arc<Context>, msg: &str) -> Self {
+        Self::new(
+            ctx,
+            Error::InvalidArguments(msg.to_string()),
+        )
+    }
+
+    /// Sets that the current error is related to an internal condition which
+    /// wasn't satisfied.
+    pub fn precondition_failed(ctx: Arc<Context>, msg: &str) -> Self {
+        Self::new(
+            ctx,
+            Error::PreconditionFailed(msg.to_string()),
+        )
+    }
+
+    /// Sets that the current error is related to a failed RPC call with
+    /// another service.
+    pub fn rpc(ctx: Arc<Context>, destination: &str, msg: &str) -> Self {
+        Self::new(
+            ctx,
+            Error::RPC(destination.to_string(), msg.to_string()),
+        )
+    }
+
+    /// Lets a service set a custom error kind for its own error.
+    pub fn custom(ctx: Arc<Context>, msg: &str) -> Self {
+        Self::new(
+            ctx,
+            Error::Custom(msg.to_string()),
+        )
+    }
+
+    /// Sets that the current error is related to a client trying to access
+    /// a resource without having permission to do so.
+    pub fn permission_denied(ctx: Arc<Context>) -> Self {
+        Self::new(
+            ctx,
+            Error::PermissionDenied,
+        )
+    }
+
+    /// Adds a code for the error so the client can map and identify their errors.
     pub fn with_code(mut self, code: i32) -> Self {
         self.code = code;
         self
     }
 
+    /// Adds additional information into the error so they can be displayed for
+    /// the client if desired.
     pub fn with_attributes(mut self, attributes: serde_json::Value) -> Self {
         self.attributes = Some(attributes);
         self
@@ -125,6 +183,7 @@ impl From<ServiceError> for tonic::Status {
 
         // Should we log our message?
         if let Some(_logger) = error.logger {
+            // TODO
         }
 
         // Return our error always as an (gRPC) Unknown?
@@ -145,9 +204,9 @@ impl IntoResponse for ServiceError {
             "NotFoundError" => StatusCode::NOT_FOUND,
             "ValidationError" => StatusCode::BAD_REQUEST,
             "ConditionError" => StatusCode::PRECONDITION_FAILED,
+            "PermissionError" => StatusCode::FORBIDDEN,
             "RPCError" => StatusCode::INTERNAL_SERVER_ERROR,
             "CustomError" => StatusCode::INTERNAL_SERVER_ERROR,
-            "PermissionError" => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

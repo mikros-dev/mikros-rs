@@ -254,9 +254,9 @@ impl Service {
         Ok(())
     }
 
-    fn get_server(&mut self, kind: &ServiceKind) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
+    fn get_server(&mut self, kind: &ServiceKind) -> Result<&mut Box<dyn plugin::service::Service>, errors::Error> {
         match self.servers.get_mut(&kind.to_string()) {
-            None => Err(merrors::Error::NotFound(format!("service {} implementation not found", kind))),
+            None => Err(errors::Error::ServiceNotFound(kind.to_string()).into()),
             Some(s) => Ok(s),
         }
     }
