@@ -1,0 +1,8 @@
+name = "http-proto-example"
+version = "v0.1.0"
+language = "rust"
+product = "examples"
+types = ["http"]
+
+[features.example]
+enabled = true

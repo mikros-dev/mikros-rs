@@ -1,8 +1,9 @@
+mod errors;
+
 use std::sync::Arc;
 use env_settings_derive::EnvSettings;
 
 use crate::definition::Definitions;
-use crate::errors as merrors;
 
 #[derive(EnvSettings, Debug)]
 #[env_settings(delay)]
@@ -30,25 +31,24 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn load(defs: &Definitions) -> merrors::Result<Arc<Self>> {
-        let e = Env::from_env(std::collections::HashMap::new());
-        match e {
+    pub fn load(defs: &Definitions) -> Result<Arc<Self>, errors::Error> {
+        match Env::from_env(std::collections::HashMap::new()) {
+            Err(e) => Err(errors::Error::SettingsError(e.to_string())),
             Ok(mut env) => {
                 env.defined_envs = env.load_defined_envs(defs)?;
                 Ok(Arc::new(env))
             },
-            Err(e) => Err(merrors::Error::EnvironmentVariableFailure(e.to_string()))
         }
     }
 
-    fn load_defined_envs(&self, defs: &Definitions) -> merrors::Result<std::collections::HashMap<String, String>> {
+    fn load_defined_envs(&self, defs: &Definitions) -> Result<std::collections::HashMap<String, String>, errors::Error> {
         let mut envs = std::collections::HashMap::new();
 
         if let Some(defined_envs) = &defs.envs {
             for e in defined_envs {
                 envs.insert(e.clone(), match std::env::var(e) {
                     Ok(v) => v,
-                    Err(_) => return Err(merrors::Error::EnvironmentVariableFailure(format!("environment variable {} not set", e))),
+                    Err(_) => return Err(errors::Error::VariableNotSet(e.to_string())),
                 });
             }
         }

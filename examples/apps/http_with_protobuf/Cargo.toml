@@ -1,0 +1,19 @@
+[package]
+name = "http_with_protobuf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.39"
+example = { path = "../../features/example" }
+mikros = { path = "../../../" }
+prost = "0.13.3"
+prost-wkt = "0.6.0"
+prost-wkt-types = "0.6.0"
+serde = "1.0.215"
+tokio = { version = "1.41.1", features = ["full"] }
+tonic = "0.12.3"
+uuid = {version = "1.11.0", features = ["serde", "v4"]}
+
+[build-dependencies]
+tonic-build = "0.12.3"

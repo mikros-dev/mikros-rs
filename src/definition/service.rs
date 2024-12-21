@@ -15,7 +15,7 @@ impl<'a> Deserialize<'a> for Service {
     {
         struct ServiceVisitor;
 
-        impl<'a> Visitor<'a> for ServiceVisitor {
+        impl Visitor<'_> for ServiceVisitor {
             type Value = Service;
 
             fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {

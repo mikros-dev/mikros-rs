@@ -2,7 +2,7 @@ name = "cronjob-example"
 version = "v0.1.0"
 language = "rust"
 product = "examples"
-types = ["cronjob"]
+types = ["cronjob2"]
 
 [features.simple_api]
 enabled = true
