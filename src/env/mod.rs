@@ -26,6 +26,9 @@ pub struct Env {
     #[env_settings(variable = "MIKROS_HTTP_PORT", default = "8080")]
     pub http_port: i32,
 
+    #[env_settings(variable = "MIKROS_HIDE_RESPONSE_FIELDS", default = "")]
+    pub hide_response_fields: Option<String>,
+
     #[env_settings(skip)]
     defined_envs: std::collections::HashMap<String, String>,
 }
@@ -58,6 +61,12 @@ impl Env {
     
     pub fn get_defined_env(&self, name: &str) -> Option<&String> {
         self.defined_envs.get(name)
+    }
+
+    pub fn response_fields(&self) -> Option<Vec<String>> {
+        self.hide_response_fields
+            .as_ref()
+            .map(|fields| fields.split(',').map(String::from).collect())
     }
 }
 

@@ -21,7 +21,7 @@ pub struct Definitions {
     pub language: String,
     pub product: String,
     pub envs: Option<Vec<String>>,
-    pub log: Option<Log>,
+    log: Option<Log>,
 
     features: Option<HashMap<String, serde_json::Value>>,
     services: Option<HashMap<String, serde_json::Value>>,
@@ -34,17 +34,33 @@ pub struct Definitions {
 
 #[derive(serde_derive::Deserialize, Debug, Clone)]
 pub struct Log {
-    pub level: String,
-    pub local_timestamp: bool,
-    pub auto_log_error: bool,
+    pub level: Option<String>,
+    pub local_timestamp: Option<bool>,
+    pub display_errors: Option<bool>,
 }
 
 impl Default for Log {
     fn default() -> Self {
         Log {
-            level: "info".to_string(),
-            local_timestamp: true,
-            auto_log_error: true,
+            level: Some("info".to_string()),
+            local_timestamp: Some(true),
+            display_errors: Some(true),
+        }
+    }
+}
+
+impl Log {
+    fn merge(&mut self, other: Log) {
+        if self.level.is_none() {
+            self.level = other.level;
+        }
+
+        if self.local_timestamp.is_none() {
+            self.local_timestamp = other.local_timestamp;
+        }
+
+        if self.display_errors.is_none() {
+            self.display_errors = other.display_errors;
         }
     }
 }
@@ -153,8 +169,12 @@ impl Definitions {
 
     pub(crate) fn log(&self) -> Log {
         match &self.log {
-            Some(l) => l.clone(),
-            None => Log::default()
+            None => Log::default(),
+            Some(log) => {
+                let mut log = log.clone();
+                log.merge(Log::default());
+                log
+            }
         }
     }
 

@@ -4,18 +4,20 @@ use std::sync::Arc;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::logger::Logger;
 use crate::service::context::Context;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Deserialize, Serialize)]
 pub enum Error {
     Internal(String),
     NotFound,
-    InvalidArguments(String),
+    InvalidArguments,
     PreconditionFailed(String),
-    RPC(String, String),
+    RPC(String),
     Custom(String),
     PermissionDenied,
 }
@@ -23,12 +25,12 @@ pub enum Error {
 impl Error {
     fn description(&self) -> String {
         match self {
-            Error::Internal(msg) => format!("internal error: {}", msg),
+            Error::Internal(msg) => msg.to_string(),
             Error::NotFound => "not found".to_string(),
-            Error::InvalidArguments(s) => format!("invalid arguments: {}", s),
-            Error::PreconditionFailed(s) => format!("precondition failed: {}", s),
-            Error::RPC(to, msg) => format!("RPC to '{}' failed: {}", to, msg),
-            Error::Custom(msg) => format!("service error: {}", msg),
+            Error::InvalidArguments => "invalid arguments".to_string(),
+            Error::PreconditionFailed(msg) => msg.to_string(),
+            Error::RPC(msg) => msg.to_string(),
+            Error::Custom(msg) => msg.to_string(),
             Error::PermissionDenied =>  "no permission to access the service".to_string(),
         }
     }
@@ -37,9 +39,9 @@ impl Error {
         match self {
             Error::Internal(_) => "InternalError".to_string(),
             Error::NotFound => "NotFoundError".to_string(),
-            Error::InvalidArguments(_) => "ValidationError".to_string(),
+            Error::InvalidArguments => "ValidationError".to_string(),
             Error::PreconditionFailed(_) => "ConditionError".to_string(),
-            Error::RPC(_, _) => "RPCError".to_string(),
+            Error::RPC(_) => "RPCError".to_string(),
             Error::Custom(_) => "CustomError".to_string(),
             Error::PermissionDenied => "PermissionError".to_string(),
         }
@@ -65,33 +67,49 @@ impl std::fmt::Debug for Error {
 // for clients.
 #[derive(Deserialize, Serialize)]
 pub struct ServiceError {
+    // Fields that are always serialized
     code: i32,
-    message: String,
     kind: String,
-    service_name: String,
+
+    // Fields that can be hidden.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    service_name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     attributes: Option<serde_json::Value>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    destination: Option<String>,
 
     #[serde(skip)]
     logger: Option<Arc<Logger>>,
+
+    #[serde(skip)]
+    concealable_attributes: Option<Vec<String>>,
 }
 
 impl ServiceError {
     fn new(ctx: Arc<Context>, error: Error) -> Self {
         Self {
             code: 0,
-            message: error.description(),
+            message: Some(error.description()),
             kind: error.kind(),
-            service_name: ctx.service_name(),
+            service_name: Some(ctx.service_name()),
             attributes: None,
-            logger: Self::get_logger(ctx),
+            logger: Self::get_logger(ctx.clone()),
+            destination: None,
+            concealable_attributes: ctx.envs.response_fields(),
         }
     }
 
     fn get_logger(ctx: Arc<Context>) -> Option<Arc<Logger>> {
-        if let Some(log) = &ctx.definitions().log {
-            if log.auto_log_error {
-                return Some(ctx.logger().clone())
-            }
+        let logger = ctx.definitions().log();
+
+        if logger.display_errors.unwrap() {
+            return Some(ctx.logger().clone())
         }
 
         None
@@ -117,10 +135,10 @@ impl ServiceError {
 
     /// Sets that the current error is related to an argument that didn't
     /// follow validation rules.
-    pub fn invalid_arguments(ctx: Arc<Context>, msg: &str) -> Self {
+    pub fn invalid_arguments(ctx: Arc<Context>, _details: serde_json::Value) -> Self {
         Self::new(
             ctx,
-            Error::InvalidArguments(msg.to_string()),
+            Error::InvalidArguments
         )
     }
 
@@ -136,10 +154,13 @@ impl ServiceError {
     /// Sets that the current error is related to a failed RPC call with
     /// another service.
     pub fn rpc(ctx: Arc<Context>, destination: &str, msg: &str) -> Self {
-        Self::new(
+        let mut error = Self::new(
             ctx,
-            Error::RPC(destination.to_string(), msg.to_string()),
-        )
+            Error::RPC(msg.to_string()),
+        );
+
+        error.destination = Some(destination.to_string());
+        error
     }
 
     /// Lets a service set a custom error kind for its own error.
@@ -172,6 +193,18 @@ impl ServiceError {
         self
     }
 
+    fn merge(a: &mut serde_json::Value, b: serde_json::Value) {
+        match (a, b) {
+            (a @ &mut serde_json::Value::Object(_), serde_json::Value::Object(b)) => {
+                let a = a.as_object_mut().unwrap();
+                for (k, v) in b {
+                    Self::merge(a.entry(k).or_insert(serde_json::Value::Null), v);
+                }
+            }
+            (a, b) => *a = b,
+        }
+    }
+
     fn serialize(&self) -> String {
         serde_json::to_string(self).unwrap_or("could not serialize error message".to_string())
     }
@@ -179,14 +212,54 @@ impl ServiceError {
 
 impl From<ServiceError> for tonic::Status {
     fn from(error: ServiceError) -> Self {
-        let message = error.serialize();
+        // Should we log the message?
+        if let Some(logger) = &error.logger {
+            let error_attributes = json!({
+                "error.code": error.code,
+                "error.kind": error.kind,
+            });
 
-        // Should we log our message?
-        if let Some(_logger) = error.logger {
-            // TODO
+            let attributes = if let Some(defined_attributes) = &error.attributes {
+                let mut defined_attributes = defined_attributes.clone();
+                ServiceError::merge(&mut defined_attributes, error_attributes);
+                defined_attributes.clone()
+            } else {
+                error_attributes
+            };
+
+            let message = error.message.clone();
+            logger.errorf(&message.unwrap(), attributes)
+        }
+
+        let mut error = error;
+
+        // Hide fields according what as defined when the application started.
+        // It's worth notice that from now on, we only have information that
+        // was serialized.
+        if let Some(attributes) = &error.concealable_attributes {
+            attributes.iter().for_each(|field| {
+                let field = field.to_lowercase();
+
+                if field == "message" {
+                    error.message = None
+                }
+
+                if field == "service_name" {
+                    error.service_name = None
+                }
+
+                if field == "attributes" {
+                    error.attributes = None;
+                }
+
+                if field == "destination" {
+                    error.destination = None;
+                }
+            });
         }
 
         // Return our error always as an (gRPC) Unknown?
+        let message = error.serialize();
         tonic::Status::unknown(message)
     }
 }

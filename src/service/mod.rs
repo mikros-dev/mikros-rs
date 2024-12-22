@@ -71,8 +71,8 @@ impl Service {
         let log = defs.log();
 
         Arc::new(logger::builder::LoggerBuilder::new()
-            .with_level(log.level.parse::<logger::Level>().unwrap_or(logger::Level::Info))
-            .with_local_timestamp(log.local_timestamp)
+            .with_level(log.level.unwrap().parse::<logger::Level>().unwrap_or(logger::Level::Info))
+            .with_local_timestamp(log.local_timestamp.unwrap())
             .with_field("svc.name", &defs.name)
             .with_field("svc.version", &defs.version)
             .with_field("svc.product", &defs.product)
@@ -256,7 +256,7 @@ impl Service {
 
     fn get_server(&mut self, kind: &ServiceKind) -> Result<&mut Box<dyn plugin::service::Service>, errors::Error> {
         match self.servers.get_mut(&kind.to_string()) {
-            None => Err(errors::Error::ServiceNotFound(kind.to_string()).into()),
+            None => Err(errors::Error::ServiceNotFound(kind.to_string())),
             Some(s) => Ok(s),
         }
     }

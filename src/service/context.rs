@@ -12,9 +12,9 @@ use crate::{errors as merrors, logger, plugin};
 #[derive(Clone)]
 pub struct Context {
     logger: Arc<logger::Logger>,
-    envs: Arc<Env>,
     definitions: Arc<Definitions>,
 
+    pub(crate) envs: Arc<Env>,
     pub(crate) features: Arc<Mutex<Vec<Box<dyn plugin::feature::Feature>>>>,
 }
 
