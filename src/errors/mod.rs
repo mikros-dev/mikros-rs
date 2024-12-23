@@ -214,21 +214,19 @@ impl From<ServiceError> for tonic::Status {
     fn from(error: ServiceError) -> Self {
         // Should we log the message?
         if let Some(logger) = &error.logger {
-            let error_attributes = json!({
+            let mut error_attributes = json!({
                 "error.code": error.code,
                 "error.kind": error.kind,
             });
 
-            let attributes = if let Some(defined_attributes) = &error.attributes {
+            if let Some(defined_attributes) = &error.attributes {
                 let mut defined_attributes = defined_attributes.clone();
                 ServiceError::merge(&mut defined_attributes, error_attributes);
-                defined_attributes.clone()
-            } else {
-                error_attributes
-            };
+                error_attributes = defined_attributes;
+            }
 
             let message = error.message.clone();
-            logger.errorf(&message.unwrap(), attributes)
+            logger.errorf(&message.unwrap(), error_attributes)
         }
 
         let mut error = error;

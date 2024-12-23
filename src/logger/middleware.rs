@@ -46,11 +46,11 @@ where
     S: Subscriber
 {
     fn on_event(&self, event: &tracing::Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
-        let now = if self.local_timestamp {
-            chrono::Local::now().to_rfc3339()
-        } else {
-            chrono::Utc::now().to_rfc3339()
-        };
+        let mut now = chrono::Local::now().to_rfc3339();
+
+        if !self.local_timestamp {
+            now = chrono::Utc::now().to_rfc3339()
+        }
 
         let mut visitor = FieldVisitor::default();
         event.record(&mut visitor);

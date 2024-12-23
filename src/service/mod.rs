@@ -56,13 +56,13 @@ impl Service {
 
     fn load_definitions(builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
         let args = Args::load();
-        let custom_info = if !builder.custom_service_types.is_empty() {
-            Some(CustomServiceInfo{
+        let mut custom_info: Option<CustomServiceInfo> = None;
+
+        if !builder.custom_service_types.is_empty() {
+            custom_info = Some(CustomServiceInfo{
                 types: Some(builder.custom_service_types.clone()),
             })
-        } else {
-            None
-        };
+        }
 
         Ok(Definitions::new(args.config_path.as_deref(), custom_info)?)
     }
