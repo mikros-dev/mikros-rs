@@ -4,7 +4,6 @@ use std::sync::Arc;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::json;
 
 use crate::logger::Logger;
 use crate::service::context::Context;
@@ -95,12 +94,12 @@ impl ServiceError {
     fn new(ctx: Arc<Context>, error: Error) -> Self {
         Self {
             code: 0,
-            message: Some(error.description()),
             kind: error.kind(),
+            message: Some(error.description()),
             service_name: Some(ctx.service_name()),
             attributes: None,
-            logger: Self::get_logger(ctx.clone()),
             destination: None,
+            logger: Self::get_logger(ctx.clone()),
             concealable_attributes: ctx.envs.response_fields(),
         }
     }
@@ -208,13 +207,24 @@ impl ServiceError {
     fn serialize(&self) -> String {
         serde_json::to_string(self).unwrap_or("could not serialize error message".to_string())
     }
+
+    // Just a helper test function to add fields that should be hidden when
+    // serialized. This way we don't need to set environment variable for this
+    // operation inside the tests.
+    #[cfg(test)]
+    fn hide_field(mut self, field: &str) -> Self {
+        let mut fields = self.concealable_attributes.unwrap_or(Vec::new());
+        fields.push(field.to_string());
+        self.concealable_attributes = Some(fields);
+        self
+    }
 }
 
 impl From<ServiceError> for tonic::Status {
     fn from(error: ServiceError) -> Self {
         // Should we log the message?
         if let Some(logger) = &error.logger {
-            let mut error_attributes = json!({
+            let mut error_attributes = serde_json::json!({
                 "error.code": error.code,
                 "error.kind": error.kind,
             });
@@ -337,4 +347,197 @@ macro_rules! internal_errors {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::logger::builder::LoggerBuilder;
+    use crate::env::Env;
+    use crate::definition::Definitions;
+
+    fn assets_path() -> std::path::PathBuf {
+        let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        p.push("resources/test");
+        p
+    }
+
+    fn build_context() -> Arc<Context> {
+        let filename = assets_path().join("definitions/service.toml.ok_custom_settings");
+        let defs = Definitions::new(filename.to_str(), None).unwrap();
+        let env = Env::load(&defs).unwrap();
+        let logger = Arc::new(LoggerBuilder::new().build());
+
+        Arc::new(Context::new(env, logger, defs, vec![]).unwrap())
+    }
+
+    #[test]
+    fn test_complete_service_error() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }));
+
+        assert_eq!(error.code, 42);
+        assert_eq!(error.kind, "RPCError");
+        assert_eq!(error.message.unwrap(), "connection failed");
+        assert_eq!(error.service_name.unwrap(), "my-service");
+        assert_eq!(error.attributes.unwrap(), serde_json::json!({
+            "key": "value"
+        }));
+
+        assert_eq!(error.destination.unwrap(), "http");
+    }
+
+    #[test]
+    fn test_service_error_without_message_field() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }))
+            .hide_field("message");
+
+        let grpc_error: tonic::Status = error.into();
+        let deserialized: ServiceError = grpc_error.into();
+
+        assert_eq!(deserialized.code, 42);
+        assert_eq!(deserialized.kind, "RPCError");
+        assert_eq!(deserialized.message.is_none(), true);
+        assert_eq!(deserialized.service_name.unwrap(), "my-service");
+        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
+            "key": "value"
+        }));
+
+        assert_eq!(deserialized.destination.unwrap(), "http");
+    }
+
+    #[test]
+    fn test_service_error_without_service_name_field() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }))
+            .hide_field("service_name");
+
+        let grpc_error: tonic::Status = error.into();
+        let deserialized: ServiceError = grpc_error.into();
+
+        assert_eq!(deserialized.code, 42);
+        assert_eq!(deserialized.kind, "RPCError");
+        assert_eq!(deserialized.message.unwrap(), "connection failed");
+        assert_eq!(deserialized.service_name.is_none(), true);
+        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
+            "key": "value"
+        }));
+
+        assert_eq!(deserialized.destination.unwrap(), "http");
+    }
+
+    #[test]
+    fn test_service_error_without_attributes_field() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }))
+            .hide_field("attributes");
+
+        let grpc_error: tonic::Status = error.into();
+        let deserialized: ServiceError = grpc_error.into();
+
+        assert_eq!(deserialized.code, 42);
+        assert_eq!(deserialized.kind, "RPCError");
+        assert_eq!(deserialized.message.unwrap(), "connection failed");
+        assert_eq!(deserialized.service_name.unwrap(), "my-service");
+        assert_eq!(deserialized.attributes.is_none(), true);
+        assert_eq!(deserialized.destination.unwrap(), "http");
+    }
+
+    #[test]
+    fn test_service_error_without_destination_field() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }))
+            .hide_field("destination");
+
+        let grpc_error: tonic::Status = error.into();
+        let deserialized: ServiceError = grpc_error.into();
+
+        assert_eq!(deserialized.code, 42);
+        assert_eq!(deserialized.kind, "RPCError");
+        assert_eq!(deserialized.message.unwrap(), "connection failed");
+        assert_eq!(deserialized.service_name.unwrap(), "my-service");
+        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
+            "key": "value"
+        }));
+
+        assert_eq!(deserialized.destination.is_none(), true);
+    }
+
+    #[test]
+    fn test_service_error_without_all_fields() {
+        let ctx = build_context();
+        let error = ServiceError::rpc(ctx.clone(), "http", "connection failed")
+            .with_code(42)
+            .with_attributes(serde_json::json!({
+                "key": "value"
+            }))
+            .hide_field("message")
+            .hide_field("service_name")
+            .hide_field("attributes")
+            .hide_field("destination");
+
+        let grpc_error: tonic::Status = error.into();
+        let deserialized: ServiceError = grpc_error.into();
+
+        assert_eq!(deserialized.code, 42);
+        assert_eq!(deserialized.kind, "RPCError");
+        assert_eq!(deserialized.message.is_none(), true);
+        assert_eq!(deserialized.service_name.is_none(), true);
+        assert_eq!(deserialized.attributes.is_none(), true);
+        assert_eq!(deserialized.destination.is_none(), true);
+    }
+
+    #[test]
+    fn test_create_all_service_error_kind() {
+        let ctx = build_context();
+
+        // Internal
+        let internal = ServiceError::internal(ctx.clone(), "some internal error");
+        assert_eq!(internal.kind, "InternalError".to_string());
+
+        // NotFound
+        let not_found = ServiceError::not_found(ctx.clone());
+        assert_eq!(not_found.kind, "NotFoundError".to_string());
+
+        // InvalidArguments
+        let invalid_arguments = ServiceError::invalid_arguments(ctx.clone(), serde_json::json!({}));
+        assert_eq!(invalid_arguments.kind, "ValidationError".to_string());
+
+        // PreconditionFailed
+        let precondition_failed = ServiceError::precondition_failed(ctx.clone(), "precondition failed");
+        assert_eq!(precondition_failed.kind, "ConditionError".to_string());
+
+        // RPC
+        let rpc = ServiceError::rpc(ctx.clone(), "example-http", "connection failed");
+        assert_eq!(rpc.kind, "RPCError".to_string());
+
+        // Custom
+        let custom = ServiceError::custom(ctx.clone(), "custom error");
+        assert_eq!(custom.kind, "CustomError".to_string());
+
+        // PermissionDenied
+        let permission_denied = ServiceError::permission_denied(ctx.clone());
+        assert_eq!(permission_denied.kind, "PermissionError".to_string());
+    }
 }
