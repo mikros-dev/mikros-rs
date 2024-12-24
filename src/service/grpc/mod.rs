@@ -1,5 +1,6 @@
 mod errors;
 
+use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -94,7 +95,7 @@ where
         definition::ServiceKind::Grpc
     }
 
-    fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()> {
+    fn initialize(&mut self, definitions: Arc<definition::Definitions>, envs: Arc<env::Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
         let service_type = definitions.get_service_type(definition::ServiceKind::Grpc)?;
         self.port = match service_type.1 {
             None => envs.grpc_port,
