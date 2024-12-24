@@ -187,14 +187,15 @@ max_diff_range = 100
 Mikros has some environment variables that it uses to set custom information
 while the application is running. They are the following:
 
-| Name                       | Description                                                                                                              |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| MIKROS_SERVICE_DEPLOY      | A string to set the current deployment server of the application, like (dev, stage, prod). Default: local                |
-| MIKROS_TRACKER_HEADER_NAME | A header name where the track ID will be located in HTTP requests/responses (not implemented yet). Default: X-Request-ID |
-| MIKROS_COUPLED_NAMESPACE   | The namespace where services/applications are running, to build the gRPC connection URL. Default: localhost              | 
-| MIKROS_COUPLED_PORT        | The default port for dependent gRPC services. Default: 7070                                                              |
-| MIKROS_GRPC_PORT           | Default listening port for gRPC applications. Default: 7070                                                              |
-| MIKROS_HTTP_PORT           | Default listening port for HTTP applications. Default: 8080                                                              |
+| Name                        | Description                                                                                                              |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| MIKROS_SERVICE_DEPLOY       | A string to set the current deployment server of the application, like (dev, stage, prod). Default: local                |
+| MIKROS_TRACKER_HEADER_NAME  | A header name where the track ID will be located in HTTP requests/responses (not implemented yet). Default: X-Request-ID |
+| MIKROS_COUPLED_NAMESPACE    | The namespace where services/applications are running, to build the gRPC connection URL. Default: localhost              | 
+| MIKROS_COUPLED_PORT         | The default port for dependent gRPC services. Default: 7070                                                              |
+| MIKROS_GRPC_PORT            | Default listening port for gRPC applications. Default: 7070                                                              |
+| MIKROS_HTTP_PORT            | Default listening port for HTTP applications. Default: 8080                                                              |
+| MIKROS_HIDE_RESPONSE_FIELDS | A comma separated list of fields to be hidden in HTTP services error response.                                           |
 
 ### The service structure
 

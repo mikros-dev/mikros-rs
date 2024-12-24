@@ -19,17 +19,14 @@ impl cronjob::CronjobService for Service {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let s = Box::new(Service::default());
     let c = Box::new(CronjobBuilder::new(s).build());
 
-    let svc = ServiceBuilder::default()
+    let mut svc = ServiceBuilder::new()
         .custom(c)
         .with_features(vec![simple_api::new(), example::new()])
-        .build();
+        .build()?;
 
-    match svc {
-        Ok(mut svc) => svc.start().await,
-        Err(e) => panic!("{}", e.to_string()),
-    }
+    Ok(svc.start().await?)
 }

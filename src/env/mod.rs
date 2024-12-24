@@ -1,8 +1,9 @@
+mod errors;
+
 use std::sync::Arc;
 use env_settings_derive::EnvSettings;
 
 use crate::definition::Definitions;
-use crate::errors as merrors;
 
 #[derive(EnvSettings, Debug)]
 #[env_settings(delay)]
@@ -25,30 +26,32 @@ pub struct Env {
     #[env_settings(variable = "MIKROS_HTTP_PORT", default = "8080")]
     pub http_port: i32,
 
+    #[env_settings(variable = "MIKROS_HIDE_RESPONSE_FIELDS", default = "")]
+    pub hide_response_fields: Option<String>,
+
     #[env_settings(skip)]
     defined_envs: std::collections::HashMap<String, String>,
 }
 
 impl Env {
-    pub fn load(defs: &Definitions) -> merrors::Result<Arc<Self>> {
-        let e = Env::from_env(std::collections::HashMap::new());
-        match e {
+    pub fn load(defs: &Definitions) -> Result<Arc<Self>, errors::Error> {
+        match Env::from_env(std::collections::HashMap::new()) {
+            Err(e) => Err(errors::Error::SettingsError(e.to_string())),
             Ok(mut env) => {
                 env.defined_envs = env.load_defined_envs(defs)?;
                 Ok(Arc::new(env))
             },
-            Err(e) => Err(merrors::Error::EnvironmentVariableFailure(e.to_string()))
         }
     }
 
-    fn load_defined_envs(&self, defs: &Definitions) -> merrors::Result<std::collections::HashMap<String, String>> {
+    fn load_defined_envs(&self, defs: &Definitions) -> Result<std::collections::HashMap<String, String>, errors::Error> {
         let mut envs = std::collections::HashMap::new();
 
         if let Some(defined_envs) = &defs.envs {
             for e in defined_envs {
                 envs.insert(e.clone(), match std::env::var(e) {
                     Ok(v) => v,
-                    Err(_) => return Err(merrors::Error::EnvironmentVariableFailure(format!("environment variable {} not set", e))),
+                    Err(_) => return Err(errors::Error::VariableNotSet(e.to_string())),
                 });
             }
         }
@@ -58,6 +61,12 @@ impl Env {
     
     pub fn get_defined_env(&self, name: &str) -> Option<&String> {
         self.defined_envs.get(name)
+    }
+
+    pub fn response_fields(&self) -> Option<Vec<String>> {
+        self.hide_response_fields
+            .as_ref()
+            .map(|fields| fields.split(',').map(String::from).collect())
     }
 }
 

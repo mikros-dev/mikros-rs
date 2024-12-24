@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use futures::lock::Mutex;
 
+use crate::service::errors;
 use crate::definition::Definitions;
 use crate::env::Env;
 use crate::{errors as merrors, logger, plugin};
@@ -11,9 +12,9 @@ use crate::{errors as merrors, logger, plugin};
 #[derive(Clone)]
 pub struct Context {
     logger: Arc<logger::Logger>,
-    envs: Arc<Env>,
     definitions: Arc<Definitions>,
 
+    pub(crate) envs: Arc<Env>,
     pub(crate) features: Arc<Mutex<Vec<Box<dyn plugin::feature::Feature>>>>,
 }
 
@@ -78,10 +79,10 @@ impl Context {
     /// On success, returns the feature found inside the context.
     pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
         match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
-            None => Err(merrors::Error::FeatureNotFound(name.to_string())),
+            None => Err(errors::Error::FeatureNotFound(name.to_string()).into()),
             Some(f) => {
                 if !f.is_enabled() {
-                    return Err(merrors::Error::FeatureDisabled(name.to_string()));
+                    return Err(errors::Error::FeatureDisabled(name.to_string()).into());
                 }
 
                 Ok(f)
@@ -124,7 +125,7 @@ macro_rules! link_grpc_service {
             let url = $context.client_connection_url($client_name);
             match $client::connect(url).await {
                 Ok(c) => c,
-                Err(e) => return Err(mikros::errors::Error::GrpcClient($client_name.to_string(), e.to_string()))
+                Err(e) => return Err(mikros::errors::Error::Custom($client_name.to_string(), e.to_string()))
             }
         }
     };

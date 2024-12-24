@@ -15,7 +15,7 @@ impl<'a> Deserialize<'a> for Service {
     {
         struct ServiceVisitor;
 
-        impl<'a> Visitor<'a> for ServiceVisitor {
+        impl Visitor<'_> for ServiceVisitor {
             type Value = Service;
 
             fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
@@ -27,18 +27,18 @@ impl<'a> Deserialize<'a> for Service {
                 E: SerdeError
             {
                 let parts: Vec<&str> = v.split(':').collect();
+                let mut port: Option<i32> = None;
+
+                if parts.len() > 1 {
+                    port = Some(parts[1].parse::<i32>().map_err(|_| E::custom("invalid port number"))?)
+                }
+
                 let service_kind = match parts[0] {
                     "grpc" => ServiceKind::Grpc,
                     "http" => ServiceKind::Http,
                     "native" => ServiceKind::Native,
                     "script" => ServiceKind::Script,
                     _ => ServiceKind::Custom(parts[0].to_string())
-                };
-
-                let port = if parts.len() > 1 {
-                    Some(parts[1].parse::<i32>().map_err(|_| E::custom("invalid port number"))?)
-                } else {
-                    None
                 };
 
                 Ok(Service(service_kind, port))

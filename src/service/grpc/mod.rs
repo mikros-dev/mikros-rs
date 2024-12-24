@@ -1,3 +1,5 @@
+mod errors;
+
 use std::convert::Infallible;
 use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -113,7 +115,7 @@ where
         plugin::service::ServiceExecutionMode::Block
     }
 
-    async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> merrors::Result<()> {
+    async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> Result<(), merrors::Error> {
         let addr = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
             self.port as u16,
@@ -136,7 +138,7 @@ where
             .serve_with_shutdown(addr, shutdown_signal)
             .await
         {
-            return Err(merrors::Error::InternalServiceError(format!("could not initialize grpc server: {}", e)))
+            return Err(errors::Error::TransportInitFailure(e.to_string()).into())
         }
 
         Ok(())

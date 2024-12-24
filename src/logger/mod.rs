@@ -51,15 +51,18 @@ impl Logger {
         let env_filter = EnvFilter::new(level.to_string());
         let (filter_layer, reload) = tracing_subscriber::reload::Layer::new(env_filter);
 
-        tracing_subscriber::registry()
-            .with(
-                LayerBuilder::new()
-                    .with_local_timestamp(builder.local_timestamp)
-                    .with_constant_fields(builder.constant_fields())
-                    .build()
-            )
-            .with(filter_layer)
-            .init();
+        // Do not initialize the global subscriber if we're running tests.
+        if !cfg!(test) {
+            tracing_subscriber::registry()
+                .with(
+                    LayerBuilder::new()
+                        .with_local_timestamp(builder.local_timestamp)
+                        .with_constant_fields(builder.constant_fields())
+                        .build()
+                )
+                .with(filter_layer)
+                .init();
+        }
 
         Self {
             reload,

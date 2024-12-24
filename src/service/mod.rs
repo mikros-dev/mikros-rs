@@ -5,6 +5,7 @@ pub mod http;
 pub mod lifecycle;
 pub mod native;
 pub mod script;
+mod errors;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,12 +27,12 @@ pub struct Service {
     logger: Arc<logger::Logger>,
     servers: HashMap<String, Box<dyn plugin::service::Service>>,
     context: context::Context,
-    handles: Vec<JoinHandle<()>>,
+    handlers: Vec<JoinHandle<()>>,
     shutdown_tx: watch::Sender<()>,
 }
 
 impl Service {
-    pub fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
+    pub(crate) fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
         let definitions = Service::load_definitions(&builder)?;
         let logger = Self::start_logger(&definitions);
         let (shutdown_tx, _) = watch::channel(());
@@ -48,30 +49,30 @@ impl Service {
             logger: logger.clone(),
             context: Self::build_context(envs.clone(), logger, definitions, features)?,
             servers: builder.servers,
-            handles: Vec::new(),
+            handlers: Vec::new(),
             shutdown_tx,
         })
     }
 
     fn load_definitions(builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
         let args = Args::load();
-        let custom_info = if !builder.custom_service_types.is_empty() {
-            Some(CustomServiceInfo{
+        let mut custom_info: Option<CustomServiceInfo> = None;
+
+        if !builder.custom_service_types.is_empty() {
+            custom_info = Some(CustomServiceInfo{
                 types: Some(builder.custom_service_types.clone()),
             })
-        } else {
-            None
-        };
+        }
 
-        Definitions::new(args.config_path.as_deref(), custom_info)
+        Ok(Definitions::new(args.config_path.as_deref(), custom_info)?)
     }
 
     fn start_logger(defs: &Definitions) -> Arc<logger::Logger> {
         let log = defs.log();
 
         Arc::new(logger::builder::LoggerBuilder::new()
-            .with_level(log.level.parse::<logger::Level>().unwrap_or(logger::Level::Info))
-            .with_local_timestamp(log.local_timestamp)
+            .with_level(log.level.unwrap().parse::<logger::Level>().unwrap_or(logger::Level::Info))
+            .with_local_timestamp(log.local_timestamp.unwrap())
             .with_field("svc.name", &defs.name)
             .with_field("svc.version", &defs.version)
             .with_field("svc.product", &defs.product)
@@ -89,13 +90,9 @@ impl Service {
     }
 
     /// Puts the service to run.
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> merrors::Result<()> {
         self.logger.info("service starting");
-
-        if let Err(e) = self.start_service().await {
-            self.logger.error(&e.to_string());
-            std::process::exit(1);
-        }
+        self.start_service().await
     }
 
     async fn start_service(&mut self) -> merrors::Result<()> {
@@ -108,17 +105,17 @@ impl Service {
 
     fn validate_definitions(&self) -> merrors::Result<()> {
         if self.servers.is_empty() {
-            return Err(merrors::Error::EmptyServiceFound)
+            return Err(errors::Error::EmptyServiceFound.into());
         }
 
         // Script services should be a single service.
         if !self.has_equal_execution_modes() {
-            return Err(merrors::Error::UnsupportedServicesExecutionMode)
+            return Err(errors::Error::UnsupportedServicesExecutionMode.into());
         }
 
         for t in &self.definitions.types {
             if !self.servers.contains_key(&t.0.to_string()) {
-                return Err(merrors::Error::ServiceKindUninitialized(t.0.clone()))
+                return Err(errors::Error::ServiceKindUninitialized(t.0.clone()).into());
             }
         }
 
@@ -196,7 +193,7 @@ impl Service {
                 }));
             });
 
-            self.handles.push(handle);
+            self.handlers.push(handle);
         }
 
         // keep running until ctrl+c
@@ -240,7 +237,7 @@ impl Service {
         let _ = self.shutdown_tx.send(());
         self.logger.debug("sending shutdown signal for service tasks");
 
-        for handle in &mut self.handles {
+        for handle in &mut self.handlers {
             let _ = handle.await;
         }
 
@@ -257,9 +254,9 @@ impl Service {
         Ok(())
     }
 
-    fn get_server(&mut self, kind: &ServiceKind) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
+    fn get_server(&mut self, kind: &ServiceKind) -> Result<&mut Box<dyn plugin::service::Service>, errors::Error> {
         match self.servers.get_mut(&kind.to_string()) {
-            None => Err(merrors::Error::NotFound(format!("service {} implementation not found", kind))),
+            None => Err(errors::Error::ServiceNotFound(kind.to_string())),
             Some(s) => Ok(s),
         }
     }

@@ -1,3 +1,5 @@
+mod errors;
+
 use std::any::Any;
 use std::sync::Arc;
 
@@ -81,7 +83,7 @@ impl plugin::service::Service for Http {
         definition::ServiceKind::Http
     }
 
-    fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> merrors::Result<()> {
+    fn initialize(&mut self, envs: Arc<env::Env>, definitions: Arc<definition::Definitions>) -> Result<(), merrors::Error> {
         let service_type = definitions.get_service_type(definition::ServiceKind::Http)?;
         self.port = match service_type.1 {
             None => envs.http_port,
@@ -102,7 +104,7 @@ impl plugin::service::Service for Http {
         ServiceExecutionMode::Block
     }
 
-    async fn run(&self, ctx: &Context, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
+    async fn run(&self, ctx: &Context, shutdown_rx: Receiver<()>) -> Result<(), merrors::Error> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();
@@ -121,12 +123,12 @@ impl plugin::service::Service for Http {
         match TcpListener::bind(addr).await {
             Ok(incoming) => {
                 if let Err(e) = axum::serve(incoming, app).with_graceful_shutdown(shutdown_signal).await {
-                    return Err(merrors::Error::InternalServiceError(format!("could not initialize http server: {}", e)))
+                    return Err(errors::Error::ShutdownFailure(e.to_string()).into())
                 }
 
                 Ok(())
             }
-            Err(e) => Err(merrors::Error::InternalServiceError(format!("could not initialize http server: {}", e)))
+            Err(e) => Err(errors::Error::InitFailure(e.to_string()).into())
         }
     }
 
