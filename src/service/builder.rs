@@ -26,6 +26,7 @@ pub struct ServiceBuilder {
     pub(crate) servers: HashMap<String, Box<dyn plugin::service::Service>>,
     pub(crate) features: Vec<Box<dyn plugin::feature::Feature>>,
     pub(crate) custom_service_types: Vec<String>,
+    pub(crate) service_options: HashMap<String, serde_json::Value>,
 }
 
 impl ServiceBuilder {
@@ -34,10 +35,13 @@ impl ServiceBuilder {
             servers: HashMap::new(),
             features: Vec::new(),
             custom_service_types: Vec::new(),
+            service_options: HashMap::new(),
         }
     }
 
     fn abort(err: merrors::Error) {
+        // Not the best practice here, but the goal is to really avoid letting
+        // the application continue its initialization with wrong information.
         panic!("{}", err.to_string())
     }
 
@@ -210,6 +214,12 @@ impl ServiceBuilder {
         self.servers.insert(service_type.clone(), custom_service);
         self.custom_service_types.push(service_type);
 
+        self
+    }
+
+    /// Disables the default health endpoint for HTTP services.
+    pub fn without_health_endpoint(mut self) -> Self {
+        self.service_options.insert("without_health_endpoint".to_string(), serde_json::Value::Bool(true));
         self
     }
 

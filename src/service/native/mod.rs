@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use futures::lock::Mutex;
@@ -70,7 +71,7 @@ impl plugin::service::Service for Native {
         definition::ServiceKind::Native
     }
 
-    fn initialize(&mut self, _: Arc<env::Env>, _: Arc<definition::Definitions>) -> merrors::Result<()> {
+    fn initialize(&mut self, _: Arc<definition::Definitions>, _: Arc<env::Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
         Ok(())
     }
 

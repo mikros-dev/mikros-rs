@@ -29,6 +29,7 @@ pub struct Service {
     context: context::Context,
     handlers: Vec<JoinHandle<()>>,
     shutdown_tx: watch::Sender<()>,
+    service_options: HashMap<String, serde_json::Value>,
 }
 
 impl Service {
@@ -51,6 +52,7 @@ impl Service {
             servers: builder.servers,
             handlers: Vec::new(),
             shutdown_tx,
+            service_options: builder.service_options,
         })
     }
 
@@ -138,8 +140,10 @@ impl Service {
         let ctx = self.context.clone();
 
         for s in &definitions.types {
+            let options = self.service_options.clone();
             let svc = self.get_server(&s.0)?;
-            svc.initialize(envs.clone(), definitions.clone())?;
+
+            svc.initialize(definitions.clone(), envs.clone(), options)?;
             svc.on_start(&ctx).await?;
         }
 
