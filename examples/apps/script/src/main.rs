@@ -4,15 +4,12 @@ use mikros::service::builder::ServiceBuilder;
 use service::Service as AppService;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let s = AppService::new();
-    let svc = ServiceBuilder::default()
+    let mut svc = ServiceBuilder::default()
         .script(Box::new(s))
         .with_features(vec![example::new()])
-        .build();
+        .build()?;
 
-    match svc {
-        Ok(mut svc) => svc.start().await,
-        Err(e) => panic!("{}", e.to_string()),
-    }
+    Ok(svc.start().await?)
 }

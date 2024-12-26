@@ -68,14 +68,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/two", get(handler_two));
 
     let state = Arc::new(Mutex::new(AppState::default()));
-    let svc = ServiceBuilder::default()
+    let mut svc = ServiceBuilder::default()
         .http_with_lifecycle_and_state(api, state.clone(), state.clone())
-        .build();
+        .build()?;
 
-    match svc {
-        Ok(mut svc) => svc.start().await,
-        Err(e) => panic!("{}", e.to_string()),
-    }
-
-    Ok(())
+    Ok(svc.start().await?)
 }

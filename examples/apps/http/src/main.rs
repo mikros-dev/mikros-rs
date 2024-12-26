@@ -27,12 +27,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/one", get(handler_one))
         .route("/two", get(handler_two));
 
-    let svc = ServiceBuilder::default().http(api).build();
+    let mut svc = ServiceBuilder::default()
+        .http(api)
+        .build()?;
 
-    match svc {
-        Ok(mut svc) => svc.start().await,
-        Err(e) => panic!("{}", e.to_string()),
-    }
-
-    Ok(())
+    Ok(svc.start().await?)
 }

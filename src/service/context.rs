@@ -125,7 +125,7 @@ macro_rules! link_grpc_service {
             let url = $context.client_connection_url($client_name);
             match $client::connect(url).await {
                 Ok(c) => c,
-                Err(e) => return Err(mikros::errors::Error::Custom($client_name.to_string(), e.to_string()))
+                Err(e) => return Err(mikros::errors::Error::Custom(e.to_string()))
             }
         }
     };

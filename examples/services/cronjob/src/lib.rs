@@ -1,5 +1,6 @@
 pub mod builder;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use mikros::definition::ServiceKind;
@@ -55,7 +56,7 @@ impl plugin::service::Service for Cronjob {
         }
     }
 
-    fn initialize(&mut self, _envs: Arc<Env>, definitions: Arc<mikros::definition::Definitions>) -> merrors::Result<()> {
+    fn initialize(&mut self, definitions: Arc<mikros::definition::Definitions>, _envs: Arc<Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
         self.definitions = definitions.load_service(self.kind())?;
         if self.definitions.is_none() {
             // TODO: return error here

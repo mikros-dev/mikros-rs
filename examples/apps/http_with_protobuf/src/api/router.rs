@@ -180,10 +180,10 @@ async fn create_card(
     // Adds mikros context inside the request for the wrapper to also access it.
     request.extensions_mut().insert(context.clone());
 
+    // Translates the wrapper response into the endpoint response.
     match router.wrapper.create_card(request).await {
         Ok(response) => Ok(Json(response.into_inner().into())),
         Err(error) => {
-            // Translates the wrapper error into the endpoint response.
             let e: merrors::ServiceError = error.into();
             Err(e.into())
         }
@@ -211,8 +211,13 @@ async fn get_card(
     request.extensions_mut().insert(context.clone());
 
     // Translates the wrapper response into the endpoint response.
-    let res = router.wrapper.get_card(request).await?;
-    Ok(Json(res.into_inner().into()))
+    match router.wrapper.get_card(request).await {
+        Ok(response) => Ok(Json(response.into_inner().into())),
+        Err(error) => {
+            let e: merrors::ServiceError = error.into();
+            Err(e.into())
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -245,8 +250,13 @@ async fn update_card(
     request.extensions_mut().insert(context.clone());
 
     // Translates the wrapper response into the endpoint response.
-    let res = router.wrapper.update_card(request).await?;
-    Ok(Json(res.into_inner().into()))
+    match router.wrapper.update_card(request).await {
+        Ok(response) => Ok(Json(response.into_inner().into())),
+        Err(error) => {
+            let e: merrors::ServiceError = error.into();
+            Err(e.into())
+        }
+    }
 }
 
 async fn delete_card(
@@ -270,8 +280,13 @@ async fn delete_card(
     request.extensions_mut().insert(context.clone());
 
     // Translates the wrapper response into the endpoint response.
-    let res = router.wrapper.delete_card(request).await?;
-    Ok(Json(res.into_inner().into()))
+    match router.wrapper.delete_card(request).await {
+        Ok(response) => Ok(Json(response.into_inner().into())),
+        Err(error) => {
+            let e: merrors::ServiceError = error.into();
+            Err(e.into())
+        }
+    }
 }
 
 #[derive(Clone)]
