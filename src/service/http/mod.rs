@@ -5,17 +5,17 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::Router;
 use axum::routing::get;
+use axum::Router;
 use futures::lock::Mutex;
 use tokio::net::TcpListener;
 use tokio::sync::watch::Receiver;
 
 use crate::http::ServiceState;
+use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 use crate::{definition, env, errors as merrors, plugin};
-use crate::plugin::service::ServiceExecutionMode;
 
 #[derive(Clone)]
 pub(crate) struct Http {
@@ -37,7 +37,10 @@ impl Http {
         }
     }
 
-    pub fn new_with_lifecycle<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>) -> Self
+    pub fn new_with_lifecycle<L>(
+        router: Router<Arc<Mutex<ServiceState>>>,
+        lifecycle: Arc<Mutex<L>>,
+    ) -> Self
     where
         L: Lifecycle + 'static,
     {
@@ -46,13 +49,20 @@ impl Http {
         s
     }
 
-    pub fn new_with_state(router: Router<Arc<Mutex<ServiceState>>>, state: Arc<Mutex<dyn Any + Send + Sync>>) -> Self {
+    pub fn new_with_state(
+        router: Router<Arc<Mutex<ServiceState>>>,
+        state: Arc<Mutex<dyn Any + Send + Sync>>,
+    ) -> Self {
         let mut s = Self::new(router);
         s.app_state = Some(state.clone());
         s
     }
 
-    pub fn new_with_lifecycle_and_state<L>(router: Router<Arc<Mutex<ServiceState>>>, lifecycle: Arc<Mutex<L>>, state: Arc<Mutex<dyn Any + Send + Sync>>) -> Self
+    pub fn new_with_lifecycle_and_state<L>(
+        router: Router<Arc<Mutex<ServiceState>>>,
+        lifecycle: Arc<Mutex<L>>,
+        state: Arc<Mutex<dyn Any + Send + Sync>>,
+    ) -> Self
     where
         L: Lifecycle + 'static,
     {
@@ -63,10 +73,10 @@ impl Http {
     }
 
     // Builds the application router according user builder options.
-    fn router(&self, ctx: &Context) -> Router {
+    fn router(&self, ctx: Arc<Context>) -> Router {
         let state = match &self.app_state {
             None => ServiceState::new(ctx),
-            Some(st) => ServiceState::new_with_state(ctx, st.clone())
+            Some(st) => ServiceState::new_with_state(ctx, st.clone()),
         };
 
         // Create the server router.
@@ -84,17 +94,17 @@ impl Http {
 
 #[async_trait::async_trait]
 impl Lifecycle for Http {
-    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         if let Some(lifecycle) = &self.lifecycle {
-            return lifecycle.lock().await.on_start(ctx).await
+            return lifecycle.lock().await.on_start(ctx).await;
         }
 
         Ok(())
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
         if let Some(lifecycle) = &self.lifecycle {
-            return lifecycle.lock().await.on_finish().await
+            return lifecycle.lock().await.on_finish().await;
         }
 
         Ok(())
@@ -105,22 +115,6 @@ impl Lifecycle for Http {
 impl plugin::service::Service for Http {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Http
-    }
-
-    fn initialize(&mut self, definitions: Arc<definition::Definitions>, envs: Arc<env::Env>, options: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
-        // Store the service port to listen for.
-        let service_type = definitions.get_service_type(definition::ServiceKind::Http)?;
-        self.port = match service_type.1 {
-            None => envs.http_port,
-            Some(port) => port,
-        };
-
-        // Store if we're going to use the default health handler or not.
-        if let Some(health_endpoint) = options.get("without_health_endpoint") {
-            self.internal_health_handler = !health_endpoint.as_bool().unwrap_or(false);
-        }
-
-        Ok(())
     }
 
     fn info(&self) -> serde_json::Value {
@@ -134,7 +128,37 @@ impl plugin::service::Service for Http {
         ServiceExecutionMode::Block
     }
 
-    async fn run(&self, ctx: &Context, shutdown_rx: Receiver<()>) -> Result<(), merrors::Error> {
+    fn initialize(
+        &mut self,
+        ctx: Arc<Context>,
+        definitions: Arc<definition::Definitions>,
+        envs: Arc<env::Env>,
+        options: HashMap<String, serde_json::Value>,
+    ) -> Result<(), merrors::ServiceError> {
+        // Store the service port to listen for.
+        match definitions.get_service_type(definition::ServiceKind::Http) {
+            Err(e) => return Err(merrors::ServiceError::from_error(ctx.clone(), e.into())),
+            Ok(service_type) => {
+                self.port = match service_type.1 {
+                    None => envs.http_port,
+                    Some(port) => port,
+                }
+            }
+        }
+
+        // Store if we're going to use the default health handler or not.
+        if let Some(health_endpoint) = options.get("without_health_endpoint") {
+            self.internal_health_handler = !health_endpoint.as_bool().unwrap_or(false);
+        }
+
+        Ok(())
+    }
+
+    async fn run(
+        &self,
+        ctx: Arc<Context>,
+        shutdown_rx: Receiver<()>,
+    ) -> Result<(), merrors::ServiceError> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();
@@ -144,10 +168,17 @@ impl plugin::service::Service for Http {
         };
 
         match TcpListener::bind(addr).await {
-            Err(e) => Err(errors::Error::InitFailure(e.to_string()).into()),
+            Err(e) => {
+                let http_error = errors::Error::InitFailure(e.to_string());
+                Err(merrors::ServiceError::from_error(ctx.clone(), http_error.into()))
+            }
             Ok(incoming) => {
-                if let Err(e) = axum::serve(incoming, self.router(ctx)).with_graceful_shutdown(shutdown_signal).await {
-                    return Err(errors::Error::ShutdownFailure(e.to_string()).into())
+                if let Err(e) = axum::serve(incoming, self.router(ctx.clone()))
+                    .with_graceful_shutdown(shutdown_signal)
+                    .await
+                {
+                    let http_error = errors::Error::ShutdownFailure(e.to_string());
+                    return Err(merrors::ServiceError::from_error(ctx.clone(), http_error.into()));
                 }
 
                 Ok(())
@@ -155,7 +186,7 @@ impl plugin::service::Service for Http {
         }
     }
 
-    async fn stop(&self, _ctx: &Context) {
+    async fn stop(&self, _: Arc<Context>) {
         // noop
     }
 }

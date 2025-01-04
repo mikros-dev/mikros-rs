@@ -92,13 +92,13 @@ impl Service {
     }
 
     /// Puts the service to run.
-    pub async fn start(&mut self) -> merrors::Result<()> {
+    pub async fn start(&mut self) -> Result<(), merrors::ServiceError> {
         self.logger.info("service starting");
-        self.start_service().await
-    }
 
-    async fn start_service(&mut self) -> merrors::Result<()> {
-        self.validate_definitions()?;
+        if let Err(e) = self.validate_definitions() {
+            return Err(e.into());
+        }
+
         self.start_features().await?;
         self.initialize_service_internals().await?;
         self.print_service_resources().await;
@@ -129,12 +129,12 @@ impl Service {
         modes.iter().all(|m| *m == modes[0])
     }
 
-    async fn start_features(&mut self) -> merrors::Result<()> {
+    async fn start_features(&mut self) -> Result<(), merrors::ServiceError> {
         self.logger.info("starting features");
         self.context.initialize_features().await
     }
 
-    async fn initialize_service_internals(&mut self) -> merrors::Result<()> {
+    async fn initialize_service_internals(&mut self) -> Result<(), merrors::ServiceError> {
         let definitions = self.definitions.clone();
         let envs = self.envs.clone();
         let ctx = self.context.clone();
@@ -143,8 +143,8 @@ impl Service {
             let options = self.service_options.clone();
             let svc = self.get_server(&s.0)?;
 
-            svc.initialize(definitions.clone(), envs.clone(), options)?;
-            svc.on_start(&ctx).await?;
+            svc.initialize(ctx.clone().into(), definitions.clone(), envs.clone(), options)?;
+            svc.on_start(ctx.clone().into()).await?;
         }
 
         Ok(())
@@ -160,7 +160,7 @@ impl Service {
         self.logger.infof("service resources", serde_json::Value::Object(info.into_iter().collect()));
     }
 
-    async fn run(&mut self) -> merrors::Result<()> {
+    async fn run(&mut self) -> Result<(), merrors::ServiceError> {
         let definitions = self.definitions.clone();
         let context = self.context.clone();
         let shutdown_tx = self.shutdown_tx.clone();
@@ -179,7 +179,7 @@ impl Service {
                     "task_name": svc.kind().to_string(),
                 }));
 
-                if let Err(e) = svc.run(&context, shutdown_rx.clone()).await {
+                if let Err(e) = svc.run(context.clone().into(), shutdown_rx.clone()).await {
                     let _ = tx.send(e).await;
                     return;
                 }
@@ -203,8 +203,10 @@ impl Service {
         // keep running until ctrl+c
         tokio::select! {
             Some(err) = rx.recv() => {
-                self.logger.error(err.to_string().as_str());
+                self.logger.error(&err.to_string());
                 self.stop_service_tasks().await?;
+
+                // Return the service handler error for the caller.
                 return Err(err);
             }
             _ = self.wait_finishing_signal() => {
@@ -227,14 +229,14 @@ impl Service {
         }
     }
 
-    async fn stop_service_tasks(&mut self) -> merrors::Result<()> {
+    async fn stop_service_tasks(&mut self) -> Result<(), merrors::ServiceError> {
         let definitions = self.definitions.clone();
         let context = self.context.clone();
 
         // Call service stop callback so the service can stop itself
         for s in &definitions.types {
             let svc = self.get_server(&s.0)?;
-            svc.stop(&context).await;
+            svc.stop(context.clone().into()).await;
         }
 
         // Tells the main tasks to stop
@@ -258,9 +260,9 @@ impl Service {
         Ok(())
     }
 
-    fn get_server(&mut self, kind: &ServiceKind) -> Result<&mut Box<dyn plugin::service::Service>, errors::Error> {
+    fn get_server(&mut self, kind: &ServiceKind) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
         match self.servers.get_mut(&kind.to_string()) {
-            None => Err(errors::Error::ServiceNotFound(kind.to_string())),
+            None => Err(errors::Error::ServiceNotFound(kind.to_string()).into()),
             Some(s) => Ok(s),
         }
     }

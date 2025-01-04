@@ -1,3 +1,5 @@
+mod macros;
+
 use std::fmt::Formatter;
 use std::sync::Arc;
 
@@ -8,27 +10,27 @@ use serde_derive::{Deserialize, Serialize};
 use crate::logger::Logger;
 use crate::service::context::Context;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Deserialize, Serialize)]
-pub enum Error {
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub(crate) enum Error {
     Internal(String),
     NotFound,
     InvalidArguments,
     PreconditionFailed(String),
-    RPC(String),
+    Rpc(String),
     Custom(String),
     PermissionDenied,
 }
 
 impl Error {
-    fn description(&self) -> String {
+    pub(crate) fn description(&self) -> String {
         match self {
             Error::Internal(msg) => msg.to_string(),
             Error::NotFound => "not found".to_string(),
             Error::InvalidArguments => "invalid arguments".to_string(),
             Error::PreconditionFailed(msg) => msg.to_string(),
-            Error::RPC(msg) => msg.to_string(),
+            Error::Rpc(msg) => msg.to_string(),
             Error::Custom(msg) => msg.to_string(),
             Error::PermissionDenied =>  "no permission to access the service".to_string(),
         }
@@ -40,24 +42,10 @@ impl Error {
             Error::NotFound => "NotFoundError".to_string(),
             Error::InvalidArguments => "ValidationError".to_string(),
             Error::PreconditionFailed(_) => "ConditionError".to_string(),
-            Error::RPC(_) => "RPCError".to_string(),
+            Error::Rpc(_) => "RPCError".to_string(),
             Error::Custom(_) => "CustomError".to_string(),
             Error::PermissionDenied => "PermissionError".to_string(),
         }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.description())
-    }
-}
-
-impl std::fmt::Debug for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.description())
     }
 }
 
@@ -155,7 +143,7 @@ impl ServiceError {
     pub fn rpc(ctx: Arc<Context>, destination: &str, msg: &str) -> Self {
         let mut error = Self::new(
             ctx,
-            Error::RPC(msg.to_string()),
+            Error::Rpc(msg.to_string()),
         );
 
         error.destination = Some(destination.to_string());
@@ -217,6 +205,11 @@ impl ServiceError {
         fields.push(field.to_string());
         self.concealable_attributes = Some(fields);
         self
+    }
+
+    // Translates an Error enum into a ServiceError object.
+    pub(crate) fn from_error(ctx: Arc<Context>, error: Error) -> Self {
+        Self::new(ctx.clone(), error)
     }
 }
 
@@ -295,58 +288,35 @@ impl IntoResponse for ServiceError {
     }
 }
 
-// A macro to ease internal modules error creation with common behavior
-// implemented. It creates an enum $name with all $entry defined. All
-// errors created from this enum are returned as Internal for the client.
-//
-// The entries can have 0 or more values in addition to your description
-// message.
-//
-// It can be called like this:
-// internal_error!(
-//      Error {
-//          Internal(msg: String) => "Internal error {}",
-//          NotFound => "Not found"
-//      }
-// )
-//
-// And an enum like this will be declared:
-//
-// enum Error {
-//      Internal(String),
-//      NotFound,
-// }
-#[macro_export]
-macro_rules! internal_errors {
-      ($name:ident { $($entry:ident$(($($arg:ident : $arg_type:ty),*))? => $desc:expr),* }) => {
-        pub enum $name {
-            $(
-                $entry$(($($arg_type),*))?,
-            )*
-        }
+impl std::error::Error for ServiceError {}
 
-        impl $name {
-            pub fn description(&self) -> String {
-                match self {
-                    $(
-                        $name::$entry$(($($arg),*))? => format!($desc, $($($arg),*)?),
-                    )*
-                }
-            }
-        }
+impl std::fmt::Display for ServiceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.serialize())
+    }
+}
 
-        impl std::fmt::Debug for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{}", self.description())
-            }
-        }
+impl std::fmt::Debug for ServiceError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.serialize())
+    }
+}
 
-        impl From<$name> for $crate::errors::Error {
-            fn from(e: $name) -> $crate::errors::Error {
-                $crate::errors::Error::Internal(e.description())
-            }
+// This is just a simple conversion for public APIs that deal with Error
+// internally but must return a ServiceError for the client.
+impl From<Error> for ServiceError {
+    fn from(error: Error) -> Self {
+        Self {
+            code: 0,
+            kind: error.kind(),
+            message: Some(error.description()),
+            service_name: None,
+            attributes: None,
+            destination: None,
+            logger: None,
+            concealable_attributes: None,
         }
-    };
+    }
 }
 
 #[cfg(test)]

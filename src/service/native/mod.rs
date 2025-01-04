@@ -4,22 +4,22 @@ use std::sync::Arc;
 use futures::lock::Mutex;
 use tokio::sync::watch;
 
+use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 use crate::{definition, env, errors as merrors, plugin};
-use crate::plugin::service::ServiceExecutionMode;
 
 #[async_trait::async_trait]
 pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
     /// This is the place where the service/application must be initialized. It
     /// should do the required initialization, put any job to execute in background
     /// and leave. It shouldn't block.
-    async fn start(&self, ctx: &Context) -> merrors::Result<()>;
+    async fn start(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
 
     /// The stop callback is called when the service/application is requested
     /// to finish. It must be responsible for finishing any previously started
     /// job.
-    async fn stop(&self, ctx: &Context);
+    async fn stop(&self, ctx: Arc<Context>);
 }
 
 pub trait NativeServiceClone {
@@ -28,7 +28,7 @@ pub trait NativeServiceClone {
 
 impl<T> NativeServiceClone for T
 where
-    T: 'static + NativeService + Clone
+    T: 'static + NativeService + Clone,
 {
     fn clone_dyn(&self) -> Box<dyn NativeService> {
         Box::new(self.clone())
@@ -56,11 +56,11 @@ impl Native {
 
 #[async_trait::async_trait]
 impl Lifecycle for Native {
-    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.on_start(ctx).await
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.on_finish().await
     }
 }
@@ -69,10 +69,6 @@ impl Lifecycle for Native {
 impl plugin::service::Service for Native {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Native
-    }
-
-    fn initialize(&mut self, _: Arc<definition::Definitions>, _: Arc<env::Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
-        Ok(())
     }
 
     fn info(&self) -> serde_json::Value {
@@ -85,11 +81,25 @@ impl plugin::service::Service for Native {
         ServiceExecutionMode::Block
     }
 
-    async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
+    fn initialize(
+        &mut self,
+        _: Arc<Context>,
+        _: Arc<definition::Definitions>,
+        _: Arc<env::Env>,
+        _: HashMap<String, serde_json::Value>,
+    ) -> Result<(), merrors::ServiceError> {
+        Ok(())
+    }
+
+    async fn run(
+        &self,
+        ctx: Arc<Context>,
+        _: watch::Receiver<()>,
+    ) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.start(ctx).await
     }
 
-    async fn stop(&self, ctx: &Context) {
+    async fn stop(&self, ctx: Arc<Context>) {
         self.svc.lock().await.stop(ctx).await
     }
 }

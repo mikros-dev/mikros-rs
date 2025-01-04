@@ -1,6 +1,5 @@
-
 // Module internal error
-crate::internal_errors!(
+crate::module_errors!(
     Error{
         TransportInitFailure(s: String) => "could not initialize transport layer: {}"
     }

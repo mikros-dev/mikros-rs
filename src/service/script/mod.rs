@@ -1,18 +1,18 @@
 use std::collections::HashMap;
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use futures::lock::Mutex;
 use tokio::sync::watch;
 
-use crate::{definition, env, errors as merrors, plugin};
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
+use crate::{definition, env, errors as merrors, plugin};
 
 #[async_trait::async_trait]
 pub trait ScriptService: ScriptServiceClone + Lifecycle + Send {
-    async fn run(&self, ctx: &Context) -> merrors::Result<()>;
-    async fn cleanup(&self, ctx: &Context);
+    async fn run(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
+    async fn cleanup(&self, ctx: Arc<Context>);
 }
 
 pub trait ScriptServiceClone {
@@ -49,11 +49,11 @@ impl Script {
 
 #[async_trait::async_trait]
 impl Lifecycle for Script {
-    async fn on_start(&mut self, ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.on_start(ctx).await
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.on_finish().await
     }
 }
@@ -62,10 +62,6 @@ impl Lifecycle for Script {
 impl plugin::service::Service for Script {
     fn kind(&self) -> definition::ServiceKind {
         definition::ServiceKind::Script
-    }
-
-    fn initialize(&mut self, _: Arc<definition::Definitions>, _: Arc<env::Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
-        Ok(())
     }
 
     fn info(&self) -> serde_json::Value {
@@ -78,11 +74,25 @@ impl plugin::service::Service for Script {
         ServiceExecutionMode::NonBlock
     }
 
-    async fn run(&self, ctx: &Context, _: watch::Receiver<()>) -> merrors::Result<()> {
+    fn initialize(
+        &mut self,
+        _: Arc<Context>,
+        _: Arc<definition::Definitions>,
+        _: Arc<env::Env>,
+        _: HashMap<String, serde_json::Value>,
+    ) -> Result<(), merrors::ServiceError> {
+        Ok(())
+    }
+
+    async fn run(
+        &self,
+        ctx: Arc<Context>,
+        _: watch::Receiver<()>,
+    ) -> Result<(), merrors::ServiceError> {
         self.svc.lock().await.run(ctx).await
     }
 
-    async fn stop(&self, ctx: &Context) {
+    async fn stop(&self, ctx: Arc<Context>) {
         self.svc.lock().await.cleanup(ctx).await
     }
 }

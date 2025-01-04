@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use futures::lock::Mutex;
 
 use crate::service::errors;
@@ -77,12 +76,16 @@ impl Context {
     }
 
     /// On success, returns the feature found inside the context.
-    pub async fn feature(&self, name: &str) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
+    pub async fn feature(&self, name: &str) -> Result<Box<dyn plugin::feature::Feature>, merrors::ServiceError> {
         match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
-            None => Err(errors::Error::FeatureNotFound(name.to_string()).into()),
+            None => {
+                let error = errors::Error::FeatureNotFound(name.to_string());
+                Err(merrors::ServiceError::from_error(self.clone().into(), error.into()))
+            },
             Some(f) => {
                 if !f.is_enabled() {
-                    return Err(errors::Error::FeatureDisabled(name.to_string()).into());
+                    let error = errors::Error::FeatureDisabled(name.to_string());
+                    return Err(merrors::ServiceError::from_error(self.clone().into(), error.into()));
                 }
 
                 Ok(f)
@@ -90,10 +93,10 @@ impl Context {
         }
     }
 
-    pub(crate) async fn initialize_features(&mut self) -> merrors::Result<()> {
+    pub(crate) async fn initialize_features(&mut self) -> Result<(), merrors::ServiceError> {
         for feature in self.features.lock().await.iter_mut() {
             if feature.can_be_initialized(self.definitions.clone(), self.envs.clone())? {
-                feature.initialize(self).await?;
+                feature.initialize(self.clone().into()).await?;
             }
         }
 

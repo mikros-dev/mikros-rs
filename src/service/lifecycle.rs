@@ -1,13 +1,15 @@
-use crate::errors as merrors;
+use std::sync::Arc;
+
+use crate::errors::ServiceError;
 use crate::service::context::Context;
 
 #[async_trait::async_trait]
 pub trait Lifecycle: LifecycleClone + Send + Sync {
-    async fn on_start(&mut self, _ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, _ctx: Arc<Context>) -> Result<(), ServiceError> {
         Ok(())
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), ServiceError> {
         Ok(())
     }
 }
