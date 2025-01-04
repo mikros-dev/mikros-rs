@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use mikros::errors as merrors;
 use mikros::service::context::Context;
 
@@ -12,12 +14,12 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self, _ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, _ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         println!("lifecycle on_start");
         Ok(())
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
         println!("lifecycle on_finish");
         Ok(())
     }
@@ -25,20 +27,20 @@ impl mikros::service::lifecycle::Lifecycle for Service {
 
 #[async_trait::async_trait]
 impl mikros::service::native::NativeService for Service {
-    async fn start(&self, ctx: &Context) -> merrors::Result<()> {
+    async fn start(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         ctx.logger().info("Start native service");
         //        Err(merrors::Error::InternalServiceError("some internal error happened".to_string()))
 
         let value = ctx.env("CUSTOM_ENV").unwrap();
         ctx.logger().info(format!("env value '{}'", value).as_str());
 
-        simple_api::execute_on(ctx, |api| {
+        simple_api::execute_on(ctx.clone(), |api| {
             api.do_something();
             Ok(())
         })
         .await?;
 
-        example::execute_on(ctx, |api| {
+        example::execute_on(ctx.clone(), |api| {
             api.do_something();
             Ok(())
         })
@@ -48,7 +50,7 @@ impl mikros::service::native::NativeService for Service {
         Ok(())
     }
 
-    async fn stop(&self, ctx: &Context) {
+    async fn stop(&self, ctx: Arc<Context>) {
         ctx.logger().info("Stop native service");
     }
 }

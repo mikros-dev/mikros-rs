@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use cronjob::builder::CronjobBuilder;
 use mikros::service::builder::ServiceBuilder;
 
@@ -6,10 +8,10 @@ pub struct Service;
 
 #[async_trait::async_trait]
 impl cronjob::CronjobService for Service {
-    async fn handler(&mut self, ctx: &mikros::service::context::Context) -> mikros::errors::Result<()> {
+    async fn handler(&mut self, ctx: Arc<mikros::service::context::Context>) -> Result<(), mikros::errors::ServiceError> {
         ctx.logger().info("handler executed");
 
-        simple_api::execute_on(ctx, |api| {
+        simple_api::execute_on(ctx.clone(), |api| {
             api.do_something();
             Ok(())
         }).await?;

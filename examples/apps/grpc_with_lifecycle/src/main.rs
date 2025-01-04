@@ -45,7 +45,7 @@ impl Greeter for MyGreeter {
             .say_hello(reply)
             .await?;
 
-        let _ = example::execute_on(&ctx, |api| {
+        let _ = example::execute_on(ctx.clone(), |api| {
             api.do_something();
             Ok(())
         })
@@ -68,14 +68,14 @@ pub struct Context {
 
 #[tonic::async_trait]
 impl lifecycle::Lifecycle for Context {
-    async fn on_start(&mut self, ctx: &context::Context) -> mikros::errors::Result<()> {
+    async fn on_start(&mut self, ctx: Arc<context::Context>) -> Result<(), mikros::errors::ServiceError> {
         println!("grpc on_start called");
         self.value = 42;
         self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
         Ok(())
     }
 
-    async fn on_finish(&self) -> mikros::errors::Result<()> {
+    async fn on_finish(&self) -> Result<(), mikros::errors::ServiceError> {
         println!("grpc on_finish called");
         Ok(())
     }
