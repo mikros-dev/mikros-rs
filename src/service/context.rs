@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use crate::definition::Definitions;
 use crate::env::Env;
-use crate::service::errors;
-use crate::{errors as merrors, logger, plugin};
+use crate::service::errors::Error;
+use crate::{errors, logger, plugin};
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.
@@ -84,7 +84,7 @@ impl Context {
     pub async fn feature(
         &self,
         name: &str,
-    ) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
+    ) -> errors::Result<Box<dyn plugin::feature::Feature>> {
         match self
             .features
             .lock()
@@ -94,16 +94,16 @@ impl Context {
             .cloned()
         {
             None => {
-                let error = errors::Error::FeatureNotFound(name.to_string());
-                Err(merrors::ServiceError::from_error(
+                let error = Error::FeatureNotFound(name.to_string());
+                Err(errors::ServiceError::from_error(
                     self.clone().into(),
                     error.into(),
                 ))
             }
             Some(f) => {
                 if !f.is_enabled() {
-                    let error = errors::Error::FeatureDisabled(name.to_string());
-                    return Err(merrors::ServiceError::from_error(
+                    let error = Error::FeatureDisabled(name.to_string());
+                    return Err(errors::ServiceError::from_error(
                         self.clone().into(),
                         error.into(),
                     ));
@@ -114,7 +114,7 @@ impl Context {
         }
     }
 
-    pub(crate) async fn initialize_features(&mut self) -> merrors::Result<()> {
+    pub(crate) async fn initialize_features(&mut self) -> errors::Result<()> {
         for feature in self.features.lock().await.iter_mut() {
             if feature.can_be_initialized(self.definitions.clone(), self.envs.clone())? {
                 feature.initialize(self.clone().into()).await?;

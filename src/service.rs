@@ -1,6 +1,7 @@
+mod errors;
+
 pub mod builder;
 pub mod context;
-mod errors;
 pub mod grpc;
 pub mod http;
 pub mod lifecycle;

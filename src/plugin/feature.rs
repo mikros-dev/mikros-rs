@@ -13,8 +13,10 @@ use crate::service::context::Context;
 /// service_api method), one can do the following:
 ///
 /// ```ignore
+/// use std::sync::Arc;
+///
 /// use mikros::service::context::Context;
-/// use mikros::{errors as merrors, plugin};
+/// use mikros::{errors, plugin};
 ///
 /// pub trait ExampleAPI {
 ///     fn do_something(&self);
@@ -24,9 +26,9 @@ use crate::service::context::Context;
 ///
 /// /// Retrieves the feature API to be used inside a service and, if found, calls
 /// /// a closure over with.
-/// pub async fn execute_on<F>(ctx: &Context, f: F) -> merrors::Result<()>
+/// pub async fn execute_on<F>(ctx: Arc<Context>, f: F) -> errors::Result<()>
 /// where
-///     F: FnOnce(&dyn ExampleAPI) -> merrors::Result<()>,
+///     F: FnOnce(&dyn ExampleAPI) -> errors::Result<()>,
 /// {
 ///     let feature = ctx.feature("simple_api").await?;
 ///     if let Some(api) = to_api(&feature) {
