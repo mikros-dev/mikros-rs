@@ -56,7 +56,11 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
     fn is_enabled(&self) -> bool;
 
     /// Checks if the feature can be initialized or not.
-    fn can_be_initialized(&self, definitions: Arc<Definitions>, envs: Arc<Env>) -> Result<bool, errors::ServiceError>;
+    fn can_be_initialized(
+        &self,
+        definitions: Arc<Definitions>,
+        envs: Arc<Env>,
+    ) -> Result<bool, errors::ServiceError>;
 
     /// Initializes everything the feature needs to run. Also, here is the place
     /// where, if it needs, some task should be put to execute.
@@ -115,9 +119,7 @@ macro_rules! impl_feature_public_api {
             Ok(())
         }
 
-        fn to_api(
-            feature: &Box<dyn plugin::feature::Feature>,
-        ) -> Option<&dyn $api_trait> {
+        fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn $api_trait> {
             feature
                 .service_api()?
                 .downcast_ref::<$api_struct>()

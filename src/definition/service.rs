@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 
-use serde::de::{Deserializer, Visitor, Error as SerdeError};
-use serde::{Deserialize, de::IntoDeserializer};
+use serde::de::{Deserializer, Error as SerdeError, Visitor};
+use serde::{de::IntoDeserializer, Deserialize};
 
 use crate::definition::ServiceKind;
 
@@ -11,7 +11,7 @@ pub struct Service(pub ServiceKind, pub Option<i32>);
 impl<'a> Deserialize<'a> for Service {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'a>
+        D: Deserializer<'a>,
     {
         struct ServiceVisitor;
 
@@ -24,13 +24,17 @@ impl<'a> Deserialize<'a> for Service {
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
             where
-                E: SerdeError
+                E: SerdeError,
             {
                 let parts: Vec<&str> = v.split(':').collect();
                 let mut port: Option<i32> = None;
 
                 if parts.len() > 1 {
-                    port = Some(parts[1].parse::<i32>().map_err(|_| E::custom("invalid port number"))?)
+                    port = Some(
+                        parts[1]
+                            .parse::<i32>()
+                            .map_err(|_| E::custom("invalid port number"))?,
+                    )
                 }
 
                 let service_kind = match parts[0] {
@@ -38,7 +42,7 @@ impl<'a> Deserialize<'a> for Service {
                     "http" => ServiceKind::Http,
                     "native" => ServiceKind::Native,
                     "script" => ServiceKind::Script,
-                    _ => ServiceKind::Custom(parts[0].to_string())
+                    _ => ServiceKind::Custom(parts[0].to_string()),
                 };
 
                 Ok(Service(service_kind, port))
@@ -61,7 +65,6 @@ where
         .collect()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,7 +78,8 @@ mod tests {
 
     #[test]
     fn test_service_type_with_port() {
-        let data = "types = [\"grpc:9090\", \"http:8080\", \"native\", \"subscriber\", \"consumer:7070\"]";
+        let data =
+            "types = [\"grpc:9090\", \"http:8080\", \"native\", \"subscriber\", \"consumer:7070\"]";
         let config: Config = toml::from_str(data).unwrap();
         assert_eq!(config.types.len(), 5);
     }

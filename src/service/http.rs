@@ -170,7 +170,10 @@ impl plugin::service::Service for Http {
         match TcpListener::bind(addr).await {
             Err(e) => {
                 let http_error = errors::Error::InitFailure(e.to_string());
-                Err(merrors::ServiceError::from_error(ctx.clone(), http_error.into()))
+                Err(merrors::ServiceError::from_error(
+                    ctx.clone(),
+                    http_error.into(),
+                ))
             }
             Ok(incoming) => {
                 if let Err(e) = axum::serve(incoming, self.router(ctx.clone()))
@@ -178,7 +181,10 @@ impl plugin::service::Service for Http {
                     .await
                 {
                     let http_error = errors::Error::ShutdownFailure(e.to_string());
-                    return Err(merrors::ServiceError::from_error(ctx.clone(), http_error.into()));
+                    return Err(merrors::ServiceError::from_error(
+                        ctx.clone(),
+                        http_error.into(),
+                    ));
                 }
 
                 Ok(())

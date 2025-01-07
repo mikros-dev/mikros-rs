@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub(crate) struct Args {
     pub config_path: Option<String>,
@@ -17,7 +16,7 @@ impl Args {
                 }
 
                 args
-            },
+            }
             Err(msg) => {
                 eprintln!("{}", msg);
                 std::process::exit(1);
@@ -43,15 +42,13 @@ impl Args {
                 "-h" | "--help" => {
                     config.help = true;
                 }
-                "--config" => {
-                    match iter.peek() {
-                        None => return Err("error: --config option requires a file path".to_string()),
-                        Some((_, next_arg)) => {
-                            config.config_path = Some(next_arg.to_string());
-                            iter.next();
-                        }
+                "--config" => match iter.peek() {
+                    None => return Err("error: --config option requires a file path".to_string()),
+                    Some((_, next_arg)) => {
+                        config.config_path = Some(next_arg.to_string());
+                        iter.next();
                     }
-                }
+                },
                 _ => {
                     return Err(format!("unknown argument: {}", arg));
                 }
@@ -92,10 +89,17 @@ mod tests {
 
     #[test]
     fn test_config_option() {
-        let args = vec!["service".to_string(), "--config".to_string(), "/path/to/service.toml".to_string()];
+        let args = vec![
+            "service".to_string(),
+            "--config".to_string(),
+            "/path/to/service.toml".to_string(),
+        ];
         let result = Args::parse(&args);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().config_path.unwrap(), "/path/to/service.toml");
+        assert_eq!(
+            result.unwrap().config_path.unwrap(),
+            "/path/to/service.toml"
+        );
     }
 
     #[test]
@@ -103,7 +107,10 @@ mod tests {
         let args = vec!["service".to_string(), "--config".to_string()];
         let result = Args::parse(&args);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "error: --config option requires a file path");
+        assert_eq!(
+            result.unwrap_err(),
+            "error: --config option requires a file path"
+        );
     }
 
     #[test]

@@ -1,11 +1,11 @@
 pub mod builder;
 pub mod context;
+mod errors;
 pub mod grpc;
 pub mod http;
 pub mod lifecycle;
 pub mod native;
 pub mod script;
-mod errors;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -15,11 +15,11 @@ use tokio::sync::watch;
 use tokio::task::{self, JoinHandle};
 
 use crate::args::Args;
-use crate::definition::{Definitions, ServiceKind, CustomServiceInfo};
-use crate::{errors as merrors, logger, plugin};
+use crate::definition::{CustomServiceInfo, Definitions, ServiceKind};
 use crate::env::Env;
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::builder::ServiceBuilder;
+use crate::{errors as merrors, logger, plugin};
 
 pub struct Service {
     envs: Arc<Env>,
@@ -61,7 +61,7 @@ impl Service {
         let mut custom_info: Option<CustomServiceInfo> = None;
 
         if !builder.custom_service_types.is_empty() {
-            custom_info = Some(CustomServiceInfo{
+            custom_info = Some(CustomServiceInfo {
                 types: Some(builder.custom_service_types.clone()),
             })
         }
@@ -72,14 +72,21 @@ impl Service {
     fn start_logger(defs: &Definitions) -> Arc<logger::Logger> {
         let log = defs.log();
 
-        Arc::new(logger::builder::LoggerBuilder::new()
-            .with_level(log.level.unwrap().parse::<logger::Level>().unwrap_or(logger::Level::Info))
-            .with_local_timestamp(log.local_timestamp.unwrap())
-            .with_field("svc.name", &defs.name)
-            .with_field("svc.version", &defs.version)
-            .with_field("svc.product", &defs.product)
-            .with_field("svc.language", &defs.language)
-            .build())
+        Arc::new(
+            logger::builder::LoggerBuilder::new()
+                .with_level(
+                    log.level
+                        .unwrap()
+                        .parse::<logger::Level>()
+                        .unwrap_or(logger::Level::Info),
+                )
+                .with_local_timestamp(log.local_timestamp.unwrap())
+                .with_field("svc.name", &defs.name)
+                .with_field("svc.version", &defs.version)
+                .with_field("svc.product", &defs.product)
+                .with_field("svc.language", &defs.language)
+                .build(),
+        )
     }
 
     fn build_context(
@@ -125,7 +132,7 @@ impl Service {
     }
 
     fn has_equal_execution_modes(&self) -> bool {
-        let modes: Vec<ServiceExecutionMode> = self.servers.values().map(|s|s.mode()).collect();
+        let modes: Vec<ServiceExecutionMode> = self.servers.values().map(|s| s.mode()).collect();
         modes.iter().all(|m| *m == modes[0])
     }
 
@@ -143,7 +150,13 @@ impl Service {
             let options = self.service_options.clone();
             let svc = self.get_server(&s.0)?;
 
-            svc.initialize(ctx.clone().into(), definitions.clone(), envs.clone(), options)?;
+            svc.initialize(
+                ctx.clone().into(),
+                definitions.clone(),
+                envs.clone(),
+                options,
+            )?;
+
             svc.on_start(ctx.clone().into()).await?;
         }
 
@@ -157,7 +170,10 @@ impl Service {
             info.insert(feature.name().to_string(), feature.info());
         }
 
-        self.logger.infof("service resources", serde_json::Value::Object(info.into_iter().collect()));
+        self.logger.infof(
+            "service resources",
+            serde_json::Value::Object(info.into_iter().collect()),
+        );
     }
 
     async fn run(&mut self) -> Result<(), merrors::ServiceError> {
@@ -175,9 +191,12 @@ impl Service {
             self.logger.infof("service is running", svc.info());
 
             let handle = task::spawn(async move {
-                context.logger_ref().debugf("starting service task", serde_json::json!({
-                    "task_name": svc.kind().to_string(),
-                }));
+                context.logger_ref().debugf(
+                    "starting service task",
+                    serde_json::json!({
+                        "task_name": svc.kind().to_string(),
+                    }),
+                );
 
                 if let Err(e) = svc.run(context.clone().into(), shutdown_rx.clone()).await {
                     let _ = tx.send(e).await;
@@ -192,9 +211,12 @@ impl Service {
                     }
                 }
 
-                context.logger_ref().debugf("service task finished", serde_json::json!({
-                    "task_name": svc.kind().to_string(),
-                }));
+                context.logger_ref().debugf(
+                    "service task finished",
+                    serde_json::json!({
+                        "task_name": svc.kind().to_string(),
+                    }),
+                );
             });
 
             self.handlers.push(handle);
@@ -241,7 +263,8 @@ impl Service {
 
         // Tells the main tasks to stop
         let _ = self.shutdown_tx.send(());
-        self.logger.debug("sending shutdown signal for service tasks");
+        self.logger
+            .debug("sending shutdown signal for service tasks");
 
         for handle in &mut self.handlers {
             let _ = handle.await;
@@ -260,7 +283,10 @@ impl Service {
         Ok(())
     }
 
-    fn get_server(&mut self, kind: &ServiceKind) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
+    fn get_server(
+        &mut self,
+        kind: &ServiceKind,
+    ) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
         match self.servers.get_mut(&kind.to_string()) {
             None => Err(errors::Error::ServiceNotFound(kind.to_string()).into()),
             Some(s) => Ok(s),

@@ -1,6 +1,7 @@
 mod errors;
 
 use std::sync::Arc;
+
 use env_settings_derive::EnvSettings;
 
 use crate::definition::Definitions;
@@ -40,25 +41,31 @@ impl Env {
             Ok(mut env) => {
                 env.defined_envs = env.load_defined_envs(defs)?;
                 Ok(Arc::new(env))
-            },
+            }
         }
     }
 
-    fn load_defined_envs(&self, defs: &Definitions) -> Result<std::collections::HashMap<String, String>, errors::Error> {
+    fn load_defined_envs(
+        &self,
+        defs: &Definitions,
+    ) -> Result<std::collections::HashMap<String, String>, errors::Error> {
         let mut envs = std::collections::HashMap::new();
 
         if let Some(defined_envs) = &defs.envs {
             for e in defined_envs {
-                envs.insert(e.clone(), match std::env::var(e) {
-                    Ok(v) => v,
-                    Err(_) => return Err(errors::Error::VariableNotSet(e.to_string())),
-                });
+                envs.insert(
+                    e.clone(),
+                    match std::env::var(e) {
+                        Ok(v) => v,
+                        Err(_) => return Err(errors::Error::VariableNotSet(e.to_string())),
+                    },
+                );
             }
         }
 
         Ok(envs)
     }
-    
+
     pub fn get_defined_env(&self, name: &str) -> Option<&String> {
         self.defined_envs.get(name)
     }

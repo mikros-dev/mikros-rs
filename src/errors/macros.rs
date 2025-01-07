@@ -1,4 +1,3 @@
-
 // A macro to ease internal modules error creation with common behavior
 // implemented. It creates an enum $name with all $entry defined. All
 // errors created from this enum are returned as Internal for the client.

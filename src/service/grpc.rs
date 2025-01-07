@@ -154,6 +154,7 @@ where
             .await
         {
             let grpc_error = errors::Error::TransportInitFailure(e.to_string());
+
             return Err(merrors::ServiceError::internal(
                 ctx.clone(),
                 &grpc_error.description(),

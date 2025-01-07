@@ -32,7 +32,7 @@ impl Error {
             Error::PreconditionFailed(msg) => msg.to_string(),
             Error::Rpc(msg) => msg.to_string(),
             Error::Custom(msg) => msg.to_string(),
-            Error::PermissionDenied =>  "no permission to access the service".to_string(),
+            Error::PermissionDenied => "no permission to access the service".to_string(),
         }
     }
 
@@ -96,7 +96,7 @@ impl ServiceError {
         let logger = ctx.definitions().log();
 
         if logger.display_errors.unwrap() {
-            return Some(ctx.logger().clone())
+            return Some(ctx.logger().clone());
         }
 
         None
@@ -105,46 +105,31 @@ impl ServiceError {
     /// Sets that the current error is related to an unexpected internal
     /// service behavior.
     pub fn internal(ctx: Arc<Context>, msg: &str) -> Self {
-        Self::new(
-            ctx,
-            Error::Internal(msg.to_string()),
-        )
+        Self::new(ctx, Error::Internal(msg.to_string()))
     }
 
     /// Sets that the current error is related to some data or resource not
     /// being found by the service.
     pub fn not_found(ctx: Arc<Context>) -> Self {
-        Self::new(
-            ctx,
-            Error::NotFound,
-        )
+        Self::new(ctx, Error::NotFound)
     }
 
     /// Sets that the current error is related to an argument that didn't
     /// follow validation rules.
     pub fn invalid_arguments(ctx: Arc<Context>, _details: serde_json::Value) -> Self {
-        Self::new(
-            ctx,
-            Error::InvalidArguments
-        )
+        Self::new(ctx, Error::InvalidArguments)
     }
 
     /// Sets that the current error is related to an internal condition which
     /// wasn't satisfied.
     pub fn precondition_failed(ctx: Arc<Context>, msg: &str) -> Self {
-        Self::new(
-            ctx,
-            Error::PreconditionFailed(msg.to_string()),
-        )
+        Self::new(ctx, Error::PreconditionFailed(msg.to_string()))
     }
 
     /// Sets that the current error is related to a failed RPC call with
     /// another service.
     pub fn rpc(ctx: Arc<Context>, destination: &str, msg: &str) -> Self {
-        let mut error = Self::new(
-            ctx,
-            Error::Rpc(msg.to_string()),
-        );
+        let mut error = Self::new(ctx, Error::Rpc(msg.to_string()));
 
         error.destination = Some(destination.to_string());
         error
@@ -152,19 +137,13 @@ impl ServiceError {
 
     /// Lets a service set a custom error kind for its own error.
     pub fn custom(ctx: Arc<Context>, msg: &str) -> Self {
-        Self::new(
-            ctx,
-            Error::Custom(msg.to_string()),
-        )
+        Self::new(ctx, Error::Custom(msg.to_string()))
     }
 
     /// Sets that the current error is related to a client trying to access
     /// a resource without having permission to do so.
     pub fn permission_denied(ctx: Arc<Context>) -> Self {
-        Self::new(
-            ctx,
-            Error::PermissionDenied,
-        )
+        Self::new(ctx, Error::PermissionDenied)
     }
 
     /// Adds a code for the error so the client can map and identify their errors.
@@ -322,9 +301,9 @@ impl From<Error> for ServiceError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::logger::builder::LoggerBuilder;
-    use crate::env::Env;
     use crate::definition::Definitions;
+    use crate::env::Env;
+    use crate::logger::builder::LoggerBuilder;
 
     fn assets_path() -> std::path::PathBuf {
         let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -354,9 +333,12 @@ mod tests {
         assert_eq!(error.kind, "RPCError");
         assert_eq!(error.message.unwrap(), "connection failed");
         assert_eq!(error.service_name.unwrap(), "my-service");
-        assert_eq!(error.attributes.unwrap(), serde_json::json!({
-            "key": "value"
-        }));
+        assert_eq!(
+            error.attributes.unwrap(),
+            serde_json::json!({
+                "key": "value"
+            })
+        );
 
         assert_eq!(error.destination.unwrap(), "http");
     }
@@ -378,9 +360,12 @@ mod tests {
         assert_eq!(deserialized.kind, "RPCError");
         assert_eq!(deserialized.message.is_none(), true);
         assert_eq!(deserialized.service_name.unwrap(), "my-service");
-        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
-            "key": "value"
-        }));
+        assert_eq!(
+            deserialized.attributes.unwrap(),
+            serde_json::json!({
+                "key": "value"
+            })
+        );
 
         assert_eq!(deserialized.destination.unwrap(), "http");
     }
@@ -402,9 +387,12 @@ mod tests {
         assert_eq!(deserialized.kind, "RPCError");
         assert_eq!(deserialized.message.unwrap(), "connection failed");
         assert_eq!(deserialized.service_name.is_none(), true);
-        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
-            "key": "value"
-        }));
+        assert_eq!(
+            deserialized.attributes.unwrap(),
+            serde_json::json!({
+                "key": "value"
+            })
+        );
 
         assert_eq!(deserialized.destination.unwrap(), "http");
     }
@@ -447,9 +435,12 @@ mod tests {
         assert_eq!(deserialized.kind, "RPCError");
         assert_eq!(deserialized.message.unwrap(), "connection failed");
         assert_eq!(deserialized.service_name.unwrap(), "my-service");
-        assert_eq!(deserialized.attributes.unwrap(), serde_json::json!({
-            "key": "value"
-        }));
+        assert_eq!(
+            deserialized.attributes.unwrap(),
+            serde_json::json!({
+                "key": "value"
+            })
+        );
 
         assert_eq!(deserialized.destination.is_none(), true);
     }
@@ -495,7 +486,8 @@ mod tests {
         assert_eq!(invalid_arguments.kind, "ValidationError".to_string());
 
         // PreconditionFailed
-        let precondition_failed = ServiceError::precondition_failed(ctx.clone(), "precondition failed");
+        let precondition_failed =
+            ServiceError::precondition_failed(ctx.clone(), "precondition failed");
         assert_eq!(precondition_failed.kind, "ConditionError".to_string());
 
         // RPC

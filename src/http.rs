@@ -49,7 +49,10 @@ impl ServiceState {
         }
     }
 
-    pub(crate) fn new_with_state(context: Arc<Context>, internal_state: Arc<Mutex<dyn Any + Send + Sync>>) -> Self {
+    pub(crate) fn new_with_state(
+        context: Arc<Context>,
+        internal_state: Arc<Mutex<dyn Any + Send + Sync>>,
+    ) -> Self {
         let mut s = Self::new(context);
         s.app_state = Some(internal_state.clone());
         s

@@ -21,14 +21,16 @@ impl LoggerBuilder {
     }
 
     pub(crate) fn with_field(mut self, name: &str, value: &str) -> Self {
-        self.constant_fields.insert(name.to_string(), value.to_string());
+        self.constant_fields
+            .insert(name.to_string(), value.to_string());
+
         self
     }
 
     pub(crate) fn constant_fields(&self) -> indexmap::IndexMap<String, serde_json::Value> {
         self.constant_fields
             .iter()
-            .map(|(k,v)| (k.clone(), serde_json::Value::String(v.clone())))
+            .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
             .collect()
     }
 

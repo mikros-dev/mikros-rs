@@ -10,13 +10,13 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
 use crate::http::ServiceState;
-use crate::service::Service;
 use crate::service::errors::Error;
 use crate::service::grpc::Grpc;
 use crate::service::http::Http;
 use crate::service::lifecycle::Lifecycle;
-use crate::service::native::{NativeService, Native};
-use crate::service::script::{ScriptService, Script};
+use crate::service::native::{Native, NativeService};
+use crate::service::script::{Script, ScriptService};
+use crate::service::Service;
 use crate::{definition, errors, plugin};
 
 /// The builder API to build a mikros service instance. It allows to initialize
@@ -55,7 +55,9 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Native::new(svc)));
+        self.servers
+            .insert(kind.to_string(), Box::new(Native::new(svc)));
+
         self
     }
 
@@ -68,7 +70,9 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Script::new(svc)));
+        self.servers
+            .insert(kind.to_string(), Box::new(Script::new(svc)));
+
         self
     }
 
@@ -76,8 +80,11 @@ impl ServiceBuilder {
     /// its API.
     pub fn grpc<S>(mut self, server: S) -> Self
     where
-        S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
-            + NamedService
+        S: tonic::codegen::Service<
+                Request<BoxBody>,
+                Response = Response<BoxBody>,
+                Error = Infallible,
+            > + NamedService
             + Clone
             + Send
             + Sync
@@ -90,7 +97,9 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Grpc::new(server)));
+        self.servers
+            .insert(kind.to_string(), Box::new(Grpc::new(server)));
+
         self
     }
 
@@ -98,14 +107,17 @@ impl ServiceBuilder {
     /// its API and another with implementing the Lifecycle API.
     pub fn grpc_with_lifecycle<S, L>(mut self, server: S, lifecycle: Arc<Mutex<L>>) -> Self
     where
-        S: tonic::codegen::Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
-            + NamedService
+        S: tonic::codegen::Service<
+                Request<BoxBody>,
+                Response = Response<BoxBody>,
+                Error = Infallible,
+            > + NamedService
             + Clone
             + Send
             + Sync
             + 'static,
         S::Future: Send + 'static,
-        L: Lifecycle + 'static
+        L: Lifecycle + 'static,
     {
         let kind = definition::ServiceKind::Grpc;
 
@@ -113,7 +125,11 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
+        self.servers.insert(
+            kind.to_string(),
+            Box::new(Grpc::new_with_lifecycle(server, lifecycle)),
+        );
+
         self
     }
 
@@ -126,7 +142,9 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Http::new(router)));
+        self.servers
+            .insert(kind.to_string(), Box::new(Http::new(router)));
+
         self
     }
 
@@ -139,7 +157,7 @@ impl ServiceBuilder {
         lifecycle: Arc<Mutex<L>>,
     ) -> Self
     where
-        L: Lifecycle + 'static
+        L: Lifecycle + 'static,
     {
         let kind = definition::ServiceKind::Http;
 
@@ -147,7 +165,11 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
+        self.servers.insert(
+            kind.to_string(),
+            Box::new(Http::new_with_lifecycle(router, lifecycle)),
+        );
+
         self
     }
 
@@ -160,7 +182,7 @@ impl ServiceBuilder {
         state: Arc<Mutex<S>>,
     ) -> Self
     where
-        S: Any + Send + Sync
+        S: Any + Send + Sync,
     {
         let kind = definition::ServiceKind::Http;
 
@@ -168,7 +190,11 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Http::new_with_state(router, state)));
+        self.servers.insert(
+            kind.to_string(),
+            Box::new(Http::new_with_state(router, state)),
+        );
+
         self
     }
 
@@ -184,7 +210,7 @@ impl ServiceBuilder {
     ) -> Self
     where
         L: Lifecycle + 'static,
-        S: Any + Send + Sync
+        S: Any + Send + Sync,
     {
         let kind = definition::ServiceKind::Http;
 
@@ -192,7 +218,11 @@ impl ServiceBuilder {
             Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
-        self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
+        self.servers.insert(
+            kind.to_string(),
+            Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)),
+        );
+
         self
     }
 
@@ -214,13 +244,16 @@ impl ServiceBuilder {
 
         self.servers.insert(service_type.clone(), custom_service);
         self.custom_service_types.push(service_type);
-
         self
     }
 
     /// Disables the default health endpoint for HTTP services.
     pub fn without_health_endpoint(mut self) -> Self {
-        self.service_options.insert("without_health_endpoint".to_string(), serde_json::Value::Bool(true));
+        self.service_options.insert(
+            "without_health_endpoint".to_string(),
+            serde_json::Value::Bool(true),
+        );
+
         self
     }
 
@@ -228,7 +261,7 @@ impl ServiceBuilder {
     pub fn build(self) -> Result<Service, errors::ServiceError> {
         match Service::new(self) {
             Ok(svc) => Ok(svc),
-            Err(e) => Err(e.into())
+            Err(e) => Err(e.into()),
         }
     }
 }

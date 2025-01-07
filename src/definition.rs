@@ -5,8 +5,9 @@ mod validation;
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use std::sync::Arc;
 use std::str::FromStr;
+use std::sync::Arc;
+
 use serde::de::DeserializeOwned;
 use validator::ValidateArgs;
 
@@ -14,7 +15,11 @@ use validator::ValidateArgs;
 // file.
 #[derive(serde_derive::Deserialize, validator::Validate, Debug)]
 #[validate(context = CustomServiceInfo)]
-#[validate(schema(function = "validation::validate_service_info", skip_on_field_errors = false, use_context))]
+#[validate(schema(
+    function = "validation::validate_service_info",
+    skip_on_field_errors = false,
+    use_context
+))]
 pub struct Definitions {
     pub name: String,
     pub version: String,
@@ -112,7 +117,10 @@ pub struct CustomServiceInfo {
 }
 
 impl Definitions {
-    pub(crate) fn new(filename: Option<&str>, custom_info: Option<CustomServiceInfo>) -> Result<Arc<Self>, errors::Error> {
+    pub(crate) fn new(
+        filename: Option<&str>,
+        custom_info: Option<CustomServiceInfo>,
+    ) -> Result<Arc<Self>, errors::Error> {
         let info: Definitions = match toml::from_str(&Self::load_service_file(filename)?) {
             Ok(content) => content,
             Err(e) => return Err(errors::Error::MalformedToml(e.to_string())),
@@ -133,7 +141,7 @@ impl Definitions {
 
     fn get_service_file_path(filename: Option<&str>) -> Result<std::path::PathBuf, errors::Error> {
         if let Some(filename) = filename {
-            return Ok(std::path::Path::new(filename).to_path_buf())
+            return Ok(std::path::Path::new(filename).to_path_buf());
         }
 
         match std::env::current_dir() {
@@ -155,15 +163,18 @@ impl Definitions {
             Err(e) => Err(errors::Error::InvalidDefinitions(e.to_string())),
             Ok(_) => match self.types.is_empty() {
                 true => Err(errors::Error::EmptyServiceType),
-                false => Ok(())
-            }
+                false => Ok(()),
+            },
         }
     }
 
-    pub(crate) fn get_service_type(&self, kind: ServiceKind) -> Result<&service::Service, errors::Error> {
+    pub(crate) fn get_service_type(
+        &self,
+        kind: ServiceKind,
+    ) -> Result<&service::Service, errors::Error> {
         match self.types.iter().find(|t| t.0 == kind) {
             Some(t) => Ok(t),
-            None => Err(errors::Error::ServiceNotFound(kind.to_string()))
+            None => Err(errors::Error::ServiceNotFound(kind.to_string())),
         }
     }
 
@@ -189,7 +200,7 @@ impl Definitions {
     fn feature(&self, feature: &str) -> Option<serde_json::Value> {
         match &self.features {
             None => None,
-            Some(features) => features.get(feature).cloned()
+            Some(features) => features.get(feature).cloned(),
         }
     }
 
@@ -203,7 +214,7 @@ impl Definitions {
     fn service(&self, service_kind: &ServiceKind) -> Option<serde_json::Value> {
         match &self.services {
             None => None,
-            Some(services) => services.get(&service_kind.to_string()).cloned()
+            Some(services) => services.get(&service_kind.to_string()).cloned(),
         }
     }
 
@@ -215,7 +226,7 @@ impl Definitions {
             return match serde_json::from_value::<T>(d.clone()) {
                 Ok(defs) => Some(defs),
                 Err(_) => None,
-            }
+            };
         }
 
         None
@@ -234,15 +245,15 @@ impl Definitions {
             Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
                 Err(_) => None,
                 Ok(settings) => Some(settings),
-            }
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_derive::Deserialize;
     use super::*;
+    use serde_derive::Deserialize;
 
     fn assets_path() -> std::path::PathBuf {
         let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -279,7 +290,7 @@ mod tests {
         assert!(defs.is_ok());
 
         match defs {
-            Ok(info ) => {
+            Ok(info) => {
                 assert_eq!(info.types.len(), 2);
                 assert_eq!(info.envs.clone().unwrap().len(), 2);
             }
@@ -289,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_load_service_file_with_custom_supported_type() {
-        let custom_info = CustomServiceInfo{
+        let custom_info = CustomServiceInfo {
             types: Some(vec!["websocket".to_string()]),
         };
 
@@ -338,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_load_service_settings() {
-        let custom_info = CustomServiceInfo{
+        let custom_info = CustomServiceInfo {
             types: Some(vec!["cronjob".to_string()]),
         };
 
@@ -355,7 +366,10 @@ mod tests {
             days: Vec<String>,
         }
 
-        let s: Option<Cronjob> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
+        let s: Option<Cronjob> = defs
+            .clone()
+            .load_service(ServiceKind::Custom("cronjob".to_string()));
+
         assert!(s.is_some());
 
         let cronjob = s.unwrap();
