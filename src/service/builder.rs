@@ -10,14 +10,14 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
 use crate::http::ServiceState;
-use crate::service::errors;
 use crate::service::Service;
+use crate::service::errors::Error;
 use crate::service::grpc::Grpc;
 use crate::service::http::Http;
 use crate::service::lifecycle::Lifecycle;
 use crate::service::native::{NativeService, Native};
 use crate::service::script::{ScriptService, Script};
-use crate::{definition, errors as merrors, plugin};
+use crate::{definition, errors, plugin};
 
 /// The builder API to build a mikros service instance. It allows to initialize
 /// each type of configured service (inside the service.toml file) with its own
@@ -39,10 +39,11 @@ impl ServiceBuilder {
         }
     }
 
-    fn abort(err: merrors::Error) {
+    fn abort(err: errors::Error) {
         // Not the best practice here, but the goal is to really avoid letting
         // the application continue its initialization with wrong information.
-        panic!("{}", err.to_string())
+        let e: errors::ServiceError = err.into();
+        panic!("{}", e.to_string())
     }
 
     /// Initializes the native service type with the required structure implementing
@@ -51,7 +52,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Native;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Native::new(svc)));
@@ -64,7 +65,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Script;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Script::new(svc)));
@@ -86,7 +87,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new(server)));
@@ -109,7 +110,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Grpc;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Grpc::new_with_lifecycle(server, lifecycle)));
@@ -122,7 +123,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new(router)));
@@ -143,7 +144,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle(router, lifecycle)));
@@ -164,7 +165,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_state(router, state)));
@@ -188,7 +189,7 @@ impl ServiceBuilder {
         let kind = definition::ServiceKind::Http;
 
         if self.servers.contains_key(&kind.to_string()) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(kind.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(kind.to_string()).into());
         }
 
         self.servers.insert(kind.to_string(), Box::new(Http::new_with_lifecycle_and_state(router, lifecycle, state)));
@@ -208,7 +209,7 @@ impl ServiceBuilder {
         let service_type = custom_service.kind().to_string();
 
         if self.servers.contains_key(&service_type) {
-            Self::abort(errors::Error::ServiceAlreadyInitialized(service_type.to_string()).into());
+            Self::abort(Error::ServiceAlreadyInitialized(service_type.to_string()).into());
         }
 
         self.servers.insert(service_type.clone(), custom_service);
@@ -224,8 +225,11 @@ impl ServiceBuilder {
     }
 
     /// Builds the service to be executed.
-    pub fn build(self) -> merrors::Result<Service> {
-        Service::new(self)
+    pub fn build(self) -> Result<Service, errors::ServiceError> {
+        match Service::new(self) {
+            Ok(svc) => Ok(svc),
+            Err(e) => Err(e.into())
+        }
     }
 }
 

@@ -3,9 +3,9 @@ use std::sync::Arc;
 
 use tokio::sync::watch;
 
-use crate::{definition, env, errors};
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
+use crate::{definition, env, errors};
 
 /// Service is a set of methods that every new kind of service must implement
 /// to be supported by the framework.
@@ -26,18 +26,24 @@ pub trait Service: ServiceClone + Lifecycle {
     ///
     /// Here is the only place where values can be stored inside the implementation
     /// for later usage.
-    fn initialize(&mut self,
-                  definitions: Arc<definition::Definitions>,
-                  envs: Arc<env::Env>,
-                  options: HashMap<String, serde_json::Value>,
-    ) -> Result<(), errors::Error>;
+    fn initialize(
+        &mut self,
+        ctx: Arc<Context>,
+        definitions: Arc<definition::Definitions>,
+        envs: Arc<env::Env>,
+        options: HashMap<String, serde_json::Value>,
+    ) -> Result<(), errors::ServiceError>;
 
     /// Puts the service implementation to run.
-    async fn run(&self, ctx: &Context, shutdown_rx: watch::Receiver<()>) -> Result<(), errors::Error>;
+    async fn run(
+        &self,
+        ctx: Arc<Context>,
+        shutdown_rx: watch::Receiver<()>,
+    ) -> Result<(), errors::ServiceError>;
 
     /// Stops the current service implementation. The place to let the service
     /// execute its graceful shutdown.
-    async fn stop(&self, ctx: &Context);
+    async fn stop(&self, ctx: Arc<Context>);
 }
 
 pub trait ServiceClone {

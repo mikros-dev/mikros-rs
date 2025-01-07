@@ -30,12 +30,12 @@ impl plugin::feature::Feature for Example {
         true
     }
 
-    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> merrors::Result<bool> {
+    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> Result<bool, merrors::ServiceError> {
         println!("example can_be_initialized");
         Ok(true)
     }
 
-    async fn initialize(&mut self, _ctx: &Context) -> merrors::Result<()> {
+    async fn initialize(&mut self, _: Arc<Context>) -> Result<(), merrors::ServiceError> {
         println!("example initialized");
         Ok(())
     }

@@ -179,11 +179,11 @@ impl Definitions {
     }
 
     /// Loads definitions from a feature.
-    pub fn load_feature<T>(&self, feature: &str) -> Result<Option<T>, errors::Error>
+    pub fn load_feature<T>(&self, feature: &str) -> Option<T>
     where
         T: DeserializeOwned,
     {
-        self.decode(self.feature(feature), feature)
+        self.decode(self.feature(feature))
     }
 
     fn feature(&self, feature: &str) -> Option<serde_json::Value> {
@@ -193,11 +193,11 @@ impl Definitions {
         }
     }
 
-    pub fn load_service<T>(&self, service_kind: ServiceKind) -> Result<Option<T>, errors::Error>
+    pub fn load_service<T>(&self, service_kind: ServiceKind) -> Option<T>
     where
         T: DeserializeOwned,
     {
-        self.decode(self.service(&service_kind), &service_kind.to_string())
+        self.decode(self.service(&service_kind))
     }
 
     fn service(&self, service_kind: &ServiceKind) -> Option<serde_json::Value> {
@@ -207,33 +207,33 @@ impl Definitions {
         }
     }
 
-    fn decode<T>(&self, data: Option<serde_json::Value>, name: &str) -> Result<Option<T>, errors::Error>
+    fn decode<T>(&self, data: Option<serde_json::Value>) -> Option<T>
     where
         T: DeserializeOwned,
     {
         if let Some(d) = data {
             return match serde_json::from_value::<T>(d.clone()) {
-                Ok(defs) => Ok(Some(defs)),
-                Err(e) => Err(errors::Error::CouldNotLoad(name.to_string(), e.to_string())),
+                Ok(defs) => Some(defs),
+                Err(_) => None,
             }
         }
 
-        Ok(None)
+        None
     }
 
     pub fn client(&self, name: &str) -> Option<Client> {
         self.clients.clone()?.get(name).cloned()
     }
 
-    pub fn custom_settings<T>(&self) -> Result<Option<T>, errors::Error>
+    pub fn custom_settings<T>(&self) -> Option<T>
     where
         T: DeserializeOwned,
     {
         match &self.service {
-            None => Ok(None),
+            None => None,
             Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
-                Err(e) => Err(errors::Error::CouldNotLoad("custom_settings".to_string(), e.to_string())),
-                Ok(settings) => Ok(Some(settings)),
+                Err(_) => None,
+                Ok(settings) => Some(settings),
             }
         }
     }
@@ -313,10 +313,10 @@ mod tests {
             collections: Vec<String>,
         }
 
-        let s: Result<Option<SimpleApi>, errors::Error> = defs.clone().load_feature("simple_api");
-        assert!(s.is_ok());
+        let s: Option<SimpleApi> = defs.clone().load_feature("simple_api");
+        assert!(s.is_some());
 
-        let simple_api = s.unwrap().unwrap();
+        let simple_api = s.unwrap();
         assert_eq!(simple_api.collections.len(), 2);
         assert_eq!(simple_api.enabled, true);
 
@@ -327,10 +327,10 @@ mod tests {
             host: String,
         }
 
-        let s: Result<Option<AnotherApi>, errors::Error> = defs.clone().load_feature("another_api");
-        assert!(s.is_ok());
+        let s: Option<AnotherApi> = defs.clone().load_feature("another_api");
+        assert!(s.is_some());
 
-        let another_api = s.unwrap().unwrap();
+        let another_api = s.unwrap();
         assert_eq!(another_api.enabled, true);
         assert_eq!(another_api.use_tls, true);
         assert_eq!(another_api.host, "localhost");
@@ -355,10 +355,10 @@ mod tests {
             days: Vec<String>,
         }
 
-        let s: Result<Option<Cronjob>, errors::Error> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
-        assert!(s.is_ok());
+        let s: Option<Cronjob> = defs.clone().load_service(ServiceKind::Custom("cronjob".to_string()));
+        assert!(s.is_some());
 
-        let cronjob = s.unwrap().unwrap();
+        let cronjob = s.unwrap();
         assert_eq!(cronjob.days.len(), 1);
         assert_eq!(cronjob.frequency, "weekly");
         assert_eq!(cronjob.scheduled_times.len(), 2);
@@ -399,10 +399,10 @@ mod tests {
             ipc_port: i32,
         }
 
-        let s: Result<Option<Service>, errors::Error> = defs.custom_settings();
-        assert!(s.is_ok());
+        let s: Option<Service> = defs.custom_settings();
+        assert!(s.is_some());
 
-        let settings = s.unwrap().unwrap();
+        let settings = s.unwrap();
         assert_eq!(settings.direction, "forward");
         assert_eq!(settings.ipc_port, 9991);
     }

@@ -12,7 +12,7 @@ use serde_derive::Deserialize;
 
 #[async_trait::async_trait]
 pub trait CronjobService: Send + Sync {
-    async fn handler(&mut self, ctx: &Context) -> merrors::Result<()>;
+    async fn handler(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
 }
 
 #[derive(Clone)]
@@ -56,22 +56,32 @@ impl plugin::service::Service for Cronjob {
         }
     }
 
-    fn initialize(&mut self, definitions: Arc<mikros::definition::Definitions>, _envs: Arc<Env>, _: HashMap<String, serde_json::Value>) -> merrors::Result<()> {
-        self.definitions = definitions.load_service(self.kind())?;
+    fn initialize(
+        &mut self,
+        _: Arc<Context>,
+        definitions: Arc<mikros::definition::Definitions>,
+        _: Arc<Env>,
+        _: HashMap<String, serde_json::Value>,
+    ) -> Result<(), merrors::ServiceError> {
+        self.definitions = definitions.load_service(self.kind());
         if self.definitions.is_none() {
-            // TODO: return error here
+            // TODO: return error here?
         }
 
         Ok(())
     }
 
-    async fn run(&self, ctx: &Context, _shutdown_rx: tokio::sync::watch::Receiver<()>) -> merrors::Result<()> {
+    async fn run(
+        &self,
+        ctx: Arc<Context>,
+        _shutdown_rx: tokio::sync::watch::Receiver<()>,
+    ) -> Result<(), merrors::ServiceError> {
         // A real cronjob service would schedule the task to execute using
         // definitions settings. We just call the handler...
-        self.service.lock().await.handler(ctx).await
+        self.service.lock().await.handler(ctx.clone()).await
     }
 
-    async fn stop(&self, _ctx: &Context) {
+    async fn stop(&self, _ctx: Arc<Context>) {
         // noop
     }
 

@@ -29,35 +29,6 @@ impl plugin::feature::Feature for Example {
         "simple_api"
     }
 
-    fn is_enabled(&self) -> bool {
-        self.definitions.enabled
-    }
-    
-    fn can_be_initialized(&self, definitions: Arc<mikros::definition::Definitions>, _: Arc<Env>) -> merrors::Result<bool> {
-        println!("simple_api can_be_initialized");
-
-        if let Some(defs) = definitions.load_feature::<Definitions>(self.name())? {
-            return Ok(defs.enabled);
-        }
-
-        Ok(false)
-    }
-
-    async fn initialize(&mut self, ctx: &Context) -> merrors::Result<()> {
-        println!("simple_api initialize");
-        ctx.logger().info("simple_api initialize");
-
-        if let Some(defs) = ctx.definitions().load_feature::<Definitions>(self.name())? {
-            self.definitions = defs;
-        }
-
-        Ok(())
-    }
-
-    fn service_api(&self) -> Option<&dyn Any> {
-        Some(self)
-    }
-
     fn info(&self) -> serde_json::Value {
         let collections = self.definitions.collections.join(",");
         serde_json::json!({
@@ -66,8 +37,37 @@ impl plugin::feature::Feature for Example {
         })
     }
 
+    fn is_enabled(&self) -> bool {
+        self.definitions.enabled
+    }
+
+    fn can_be_initialized(&self, definitions: Arc<mikros::definition::Definitions>, _: Arc<Env>) -> Result<bool, merrors::ServiceError> {
+        println!("simple_api can_be_initialized");
+
+        if let Some(defs) = definitions.load_feature::<Definitions>(self.name()) {
+            return Ok(defs.enabled);
+        }
+
+        Ok(false)
+    }
+
+    async fn initialize(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+        println!("simple_api initialize");
+        ctx.logger().info("simple_api initialize");
+
+        if let Some(defs) = ctx.definitions().load_feature::<Definitions>(self.name()) {
+            self.definitions = defs;
+        }
+
+        Ok(())
+    }
+
     async fn cleanup(&self) {
         println!("simple_api cleanup");
+    }
+
+    fn service_api(&self) -> Option<&dyn Any> {
+        Some(self)
     }
 }
 

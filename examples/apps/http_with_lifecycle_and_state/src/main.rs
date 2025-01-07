@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::routing::get;
 use futures::lock::Mutex;
+use mikros::errors::ServiceError;
 use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
 use mikros::service::lifecycle::Lifecycle;
@@ -22,14 +23,14 @@ impl AppState {
 impl Lifecycle for AppState {
     async fn on_start(
         &mut self,
-        _ctx: &mikros::service::context::Context,
-    ) -> mikros::errors::Result<()> {
+        _ctx: Arc<mikros::service::context::Context>,
+    ) -> Result<(), ServiceError> {
         println!("service on_start");
         self.value = 42;
         Ok(())
     }
 
-    async fn on_finish(&self) -> mikros::errors::Result<()> {
+    async fn on_finish(&self) -> Result<(), ServiceError> {
         println!("service on_finish");
         Ok(())
     }

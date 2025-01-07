@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use mikros::errors as merrors;
 use mikros::service::context::Context;
 
@@ -12,12 +14,12 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self, _ctx: &Context) -> merrors::Result<()> {
+    async fn on_start(&mut self, _ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         println!("lifecycle on_start");
         Ok(())
     }
 
-    async fn on_finish(&self) -> merrors::Result<()> {
+    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
         println!("lifecycle on_finish");
         Ok(())
     }
@@ -25,7 +27,7 @@ impl mikros::service::lifecycle::Lifecycle for Service {
 
 #[async_trait::async_trait]
 impl mikros::service::script::ScriptService for Service {
-    async fn run(&self, ctx: &Context) -> merrors::Result<()> {
+    async fn run(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
         ctx.logger().info("Start script service");
         example::execute_on(ctx, |api| {
             api.do_something();
@@ -36,7 +38,7 @@ impl mikros::service::script::ScriptService for Service {
         Ok(())
     }
 
-    async fn cleanup(&self, ctx: &Context) {
+    async fn cleanup(&self, ctx: Arc<Context>) {
         ctx.logger().info("Stop script service");
     }
 }

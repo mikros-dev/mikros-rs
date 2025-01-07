@@ -88,13 +88,18 @@ impl card::card_service_server::CardService for Service {
     }
 }
 
+impl Service {
+    pub fn new() -> Router {
+        let greeter = Arc::new(Service::default());
+        Router::new(greeter)
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let greeter = Arc::new(Service::default());
-    let routes = Router::new(greeter).routes();
-
+    let service = Service::new();
     let mut svc = ServiceBuilder::default()
-        .http(routes)
+        .http(service.routes())
         .build()?;
 
     Ok(svc.start().await?)

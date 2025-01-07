@@ -1,7 +1,7 @@
 use crate::definition;
 
 // Module internal errors
-crate::internal_errors!(
+crate::module_errors!(
     Error {
         EmptyServiceFound => "cannot execute without a service implementation",
         FeatureNotFound(f: String) => "feature '{}' not found",
