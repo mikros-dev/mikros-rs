@@ -8,7 +8,7 @@ pub struct Service;
 
 #[async_trait::async_trait]
 impl cronjob::CronjobService for Service {
-    async fn handler(&mut self, ctx: Arc<mikros::service::context::Context>) -> Result<(), mikros::errors::ServiceError> {
+    async fn handler(&mut self, ctx: Arc<mikros::service::context::Context>) -> mikros::errors::Result<()> {
         ctx.logger().info("handler executed");
 
         simple_api::execute_on(ctx.clone(), |api| {

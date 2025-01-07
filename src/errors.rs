@@ -10,8 +10,6 @@ use serde_derive::{Deserialize, Serialize};
 use crate::logger::Logger;
 use crate::service::context::Context;
 
-pub(crate) type Result<T> = std::result::Result<T, Error>;
-
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub(crate) enum Error {
     Internal(String),
@@ -48,6 +46,10 @@ impl Error {
         }
     }
 }
+
+// Library Result that should be used by public APIs to keep the standard error
+// across all library and applications code.
+pub type Result<T> = std::result::Result<T, ServiceError>;
 
 // The error that a service must return for another service, either through an
 // RPC call (between gRPC client-server communication) or as an HTTP response
@@ -317,7 +319,7 @@ mod tests {
         let env = Env::load(&defs).unwrap();
         let logger = Arc::new(LoggerBuilder::new().build());
 
-        Arc::new(Context::new(env, logger, defs, vec![]).unwrap())
+        Arc::new(Context::new(env, logger, defs, vec![]))
     }
 
     #[test]

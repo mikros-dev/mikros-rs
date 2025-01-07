@@ -68,14 +68,14 @@ pub struct Context {
 
 #[tonic::async_trait]
 impl lifecycle::Lifecycle for Context {
-    async fn on_start(&mut self, ctx: Arc<context::Context>) -> Result<(), mikros::errors::ServiceError> {
+    async fn on_start(&mut self, ctx: Arc<context::Context>) -> mikros::errors::Result<()> {
         println!("grpc on_start called");
         self.value = 42;
         self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
         Ok(())
     }
 
-    async fn on_finish(&self) -> Result<(), mikros::errors::ServiceError> {
+    async fn on_finish(&self) -> mikros::errors::Result<()> {
         println!("grpc on_finish called");
         Ok(())
     }

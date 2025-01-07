@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use mikros::definition::Definitions;
 use mikros::env::Env;
-use mikros::{errors as merrors, impl_feature_public_api, plugin, serde_json};
+use mikros::{errors, impl_feature_public_api, plugin, serde_json};
 use mikros::service::context::Context;
 
 /// The feature public API.
@@ -30,12 +30,12 @@ impl plugin::feature::Feature for Example {
         true
     }
 
-    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> Result<bool, merrors::ServiceError> {
+    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> errors::Result<bool> {
         println!("example can_be_initialized");
         Ok(true)
     }
 
-    async fn initialize(&mut self, _: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn initialize(&mut self, _: Arc<Context>) -> errors::Result<()> {
         println!("example initialized");
         Ok(())
     }

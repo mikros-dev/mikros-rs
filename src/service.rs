@@ -33,7 +33,7 @@ pub struct Service {
 }
 
 impl Service {
-    pub(crate) fn new(builder: ServiceBuilder) -> merrors::Result<Self> {
+    pub(crate) fn new(builder: ServiceBuilder) -> Result<Self, merrors::Error> {
         let definitions = Service::load_definitions(&builder)?;
         let logger = Self::start_logger(&definitions);
         let (shutdown_tx, _) = watch::channel(());
@@ -48,7 +48,7 @@ impl Service {
             envs: envs.clone(),
             definitions: definitions.clone(),
             logger: logger.clone(),
-            context: Self::build_context(envs.clone(), logger, definitions, features)?,
+            context: Self::build_context(envs.clone(), logger, definitions, features),
             servers: builder.servers,
             handlers: Vec::new(),
             shutdown_tx,
@@ -56,7 +56,7 @@ impl Service {
         })
     }
 
-    fn load_definitions(builder: &ServiceBuilder) -> merrors::Result<Arc<Definitions>> {
+    fn load_definitions(builder: &ServiceBuilder) -> Result<Arc<Definitions>, merrors::Error> {
         let args = Args::load();
         let mut custom_info: Option<CustomServiceInfo> = None;
 
@@ -94,12 +94,12 @@ impl Service {
         logger: Arc<logger::Logger>,
         defs: Arc<Definitions>,
         features: Vec<Box<dyn plugin::feature::Feature>>,
-    ) -> merrors::Result<context::Context> {
+    ) -> context::Context {
         context::Context::new(envs, logger, defs, features)
     }
 
     /// Puts the service to run.
-    pub async fn start(&mut self) -> Result<(), merrors::ServiceError> {
+    pub async fn start(&mut self) -> merrors::Result<()> {
         self.logger.info("service starting");
 
         if let Err(e) = self.validate_definitions() {
@@ -112,7 +112,7 @@ impl Service {
         self.run().await
     }
 
-    fn validate_definitions(&self) -> merrors::Result<()> {
+    fn validate_definitions(&self) -> Result<(), merrors::Error> {
         if self.servers.is_empty() {
             return Err(errors::Error::EmptyServiceFound.into());
         }
@@ -136,12 +136,12 @@ impl Service {
         modes.iter().all(|m| *m == modes[0])
     }
 
-    async fn start_features(&mut self) -> Result<(), merrors::ServiceError> {
+    async fn start_features(&mut self) -> merrors::Result<()> {
         self.logger.info("starting features");
         self.context.initialize_features().await
     }
 
-    async fn initialize_service_internals(&mut self) -> Result<(), merrors::ServiceError> {
+    async fn initialize_service_internals(&mut self) -> merrors::Result<()> {
         let definitions = self.definitions.clone();
         let envs = self.envs.clone();
         let ctx = self.context.clone();
@@ -176,7 +176,7 @@ impl Service {
         );
     }
 
-    async fn run(&mut self) -> Result<(), merrors::ServiceError> {
+    async fn run(&mut self) -> merrors::Result<()> {
         let definitions = self.definitions.clone();
         let context = self.context.clone();
         let shutdown_tx = self.shutdown_tx.clone();
@@ -251,7 +251,7 @@ impl Service {
         }
     }
 
-    async fn stop_service_tasks(&mut self) -> Result<(), merrors::ServiceError> {
+    async fn stop_service_tasks(&mut self) -> merrors::Result<()> {
         let definitions = self.definitions.clone();
         let context = self.context.clone();
 
@@ -286,7 +286,7 @@ impl Service {
     fn get_server(
         &mut self,
         kind: &ServiceKind,
-    ) -> merrors::Result<&mut Box<dyn plugin::service::Service>> {
+    ) -> Result<&mut Box<dyn plugin::service::Service>, merrors::Error> {
         match self.servers.get_mut(&kind.to_string()) {
             None => Err(errors::Error::ServiceNotFound(kind.to_string()).into()),
             Some(s) => Ok(s),

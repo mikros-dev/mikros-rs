@@ -14,7 +14,7 @@ pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
     /// This is the place where the service/application must be initialized. It
     /// should do the required initialization, put any job to execute in background
     /// and leave. It shouldn't block.
-    async fn start(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
+    async fn start(&self, ctx: Arc<Context>) -> merrors::Result<()>;
 
     /// The stop callback is called when the service/application is requested
     /// to finish. It must be responsible for finishing any previously started
@@ -56,11 +56,11 @@ impl Native {
 
 #[async_trait::async_trait]
 impl Lifecycle for Native {
-    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> merrors::Result<()> {
         self.svc.lock().await.on_start(ctx).await
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         self.svc.lock().await.on_finish().await
     }
 }
@@ -87,7 +87,7 @@ impl plugin::service::Service for Native {
         _: Arc<definition::Definitions>,
         _: Arc<env::Env>,
         _: HashMap<String, serde_json::Value>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         Ok(())
     }
 
@@ -95,7 +95,7 @@ impl plugin::service::Service for Native {
         &self,
         ctx: Arc<Context>,
         _: watch::Receiver<()>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         self.svc.lock().await.start(ctx).await
     }
 

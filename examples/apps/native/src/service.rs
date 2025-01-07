@@ -14,12 +14,12 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self, _ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, _ctx: Arc<Context>) -> merrors::Result<()> {
         println!("lifecycle on_start");
         Ok(())
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         println!("lifecycle on_finish");
         Ok(())
     }
@@ -27,7 +27,7 @@ impl mikros::service::lifecycle::Lifecycle for Service {
 
 #[async_trait::async_trait]
 impl mikros::service::native::NativeService for Service {
-    async fn start(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn start(&self, ctx: Arc<Context>) -> merrors::Result<()> {
         ctx.logger().info("Start native service");
         //        Err(merrors::Error::InternalServiceError("some internal error happened".to_string()))
 

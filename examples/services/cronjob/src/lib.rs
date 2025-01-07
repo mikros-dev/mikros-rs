@@ -5,14 +5,14 @@ use std::sync::Arc;
 
 use mikros::definition::ServiceKind;
 use mikros::env::Env;
-use mikros::{errors as merrors, plugin, Mutex, serde_json};
+use mikros::{errors, plugin, Mutex, serde_json};
 use mikros::service::context::Context;
 use mikros::service::lifecycle::Lifecycle;
 use serde_derive::Deserialize;
 
 #[async_trait::async_trait]
 pub trait CronjobService: Send + Sync {
-    async fn handler(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
+    async fn handler(&mut self, ctx: Arc<Context>) -> errors::Result<()>;
 }
 
 #[derive(Clone)]
@@ -62,7 +62,7 @@ impl plugin::service::Service for Cronjob {
         definitions: Arc<mikros::definition::Definitions>,
         _: Arc<Env>,
         _: HashMap<String, serde_json::Value>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> errors::Result<()> {
         self.definitions = definitions.load_service(self.kind());
         if self.definitions.is_none() {
             // TODO: return error here?
@@ -75,7 +75,7 @@ impl plugin::service::Service for Cronjob {
         &self,
         ctx: Arc<Context>,
         _shutdown_rx: tokio::sync::watch::Receiver<()>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> errors::Result<()> {
         // A real cronjob service would schedule the task to execute using
         // definitions settings. We just call the handler...
         self.service.lock().await.handler(ctx.clone()).await

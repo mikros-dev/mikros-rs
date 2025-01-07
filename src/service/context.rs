@@ -23,13 +23,13 @@ impl Context {
         logger: Arc<logger::Logger>,
         definitions: Arc<Definitions>,
         features: Vec<Box<dyn plugin::feature::Feature>>,
-    ) -> merrors::Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             logger,
             envs,
             definitions,
             features: Arc::new(Mutex::new(features)),
-        })
+        }
     }
 
     /// Gives the service access to the current logger, so it can display
@@ -84,7 +84,7 @@ impl Context {
     pub async fn feature(
         &self,
         name: &str,
-    ) -> Result<Box<dyn plugin::feature::Feature>, merrors::ServiceError> {
+    ) -> merrors::Result<Box<dyn plugin::feature::Feature>> {
         match self
             .features
             .lock()
@@ -114,7 +114,7 @@ impl Context {
         }
     }
 
-    pub(crate) async fn initialize_features(&mut self) -> Result<(), merrors::ServiceError> {
+    pub(crate) async fn initialize_features(&mut self) -> merrors::Result<()> {
         for feature in self.features.lock().await.iter_mut() {
             if feature.can_be_initialized(self.definitions.clone(), self.envs.clone())? {
                 feature.initialize(self.clone().into()).await?;

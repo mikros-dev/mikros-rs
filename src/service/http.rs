@@ -94,7 +94,7 @@ impl Http {
 
 #[async_trait::async_trait]
 impl Lifecycle for Http {
-    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> merrors::Result<()> {
         if let Some(lifecycle) = &self.lifecycle {
             return lifecycle.lock().await.on_start(ctx).await;
         }
@@ -102,7 +102,7 @@ impl Lifecycle for Http {
         Ok(())
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         if let Some(lifecycle) = &self.lifecycle {
             return lifecycle.lock().await.on_finish().await;
         }
@@ -134,7 +134,7 @@ impl plugin::service::Service for Http {
         definitions: Arc<definition::Definitions>,
         envs: Arc<env::Env>,
         options: HashMap<String, serde_json::Value>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         // Store the service port to listen for.
         match definitions.get_service_type(definition::ServiceKind::Http) {
             Err(e) => return Err(merrors::ServiceError::from_error(ctx.clone(), e.into())),
@@ -158,7 +158,7 @@ impl plugin::service::Service for Http {
         &self,
         ctx: Arc<Context>,
         shutdown_rx: Receiver<()>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();

@@ -258,7 +258,7 @@ impl ServiceBuilder {
     }
 
     /// Builds the service to be executed.
-    pub fn build(self) -> Result<Service, errors::ServiceError> {
+    pub fn build(self) -> errors::Result<Service> {
         match Service::new(self) {
             Ok(svc) => Ok(svc),
             Err(e) => Err(e.into()),
