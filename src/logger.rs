@@ -3,8 +3,12 @@ mod middleware;
 
 use std::str::FromStr;
 
-use tracing_subscriber::{EnvFilter, layer::{Layered, SubscriberExt}, reload::Handle, Registry};
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{
+    layer::{Layered, SubscriberExt},
+    reload::Handle,
+    EnvFilter, Registry,
+};
 
 use crate::logger::builder::LoggerBuilder;
 use crate::logger::middleware::{Layer, LayerBuilder};
@@ -58,15 +62,13 @@ impl Logger {
                     LayerBuilder::new()
                         .with_local_timestamp(builder.local_timestamp)
                         .with_constant_fields(builder.constant_fields())
-                        .build()
+                        .build(),
                 )
                 .with(filter_layer)
                 .init();
         }
 
-        Self {
-            reload,
-        }
+        Self { reload }
     }
 
     pub fn debug(&self, message: &str) {
@@ -118,6 +120,8 @@ impl Logger {
 
     pub fn change_level(&self, level: Level) {
         let level: tracing::Level = level.into();
-        let _ = self.reload.modify(|f| *f = EnvFilter::new(level.to_string()));
+        let _ = self
+            .reload
+            .modify(|f| *f = EnvFilter::new(level.to_string()));
     }
 }

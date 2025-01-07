@@ -2,7 +2,7 @@ use std::any::Any;
 use std::sync::Arc;
 
 use mikros::env::Env;
-use mikros::{errors as merrors, impl_feature_public_api, serde_json};
+use mikros::{errors, impl_feature_public_api, serde_json};
 use mikros::plugin;
 use mikros::service::context::Context;
 use serde_derive::Deserialize;
@@ -41,7 +41,7 @@ impl plugin::feature::Feature for Example {
         self.definitions.enabled
     }
 
-    fn can_be_initialized(&self, definitions: Arc<mikros::definition::Definitions>, _: Arc<Env>) -> Result<bool, merrors::ServiceError> {
+    fn can_be_initialized(&self, definitions: Arc<mikros::definition::Definitions>, _: Arc<Env>) -> errors::Result<bool> {
         println!("simple_api can_be_initialized");
 
         if let Some(defs) = definitions.load_feature::<Definitions>(self.name()) {
@@ -51,7 +51,7 @@ impl plugin::feature::Feature for Example {
         Ok(false)
     }
 
-    async fn initialize(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn initialize(&mut self, ctx: Arc<Context>) -> errors::Result<()> {
         println!("simple_api initialize");
         ctx.logger().info("simple_api initialize");
 

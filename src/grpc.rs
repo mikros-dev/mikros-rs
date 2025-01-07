@@ -12,9 +12,7 @@ pub(crate) struct ContextExtractor {
 
 impl ContextExtractor {
     pub(crate) fn new(ctx: Arc<context::Context>) -> Self {
-        ContextExtractor {
-            ctx: ctx.clone(),
-        }
+        ContextExtractor { ctx: ctx.clone() }
     }
 }
 
@@ -37,10 +35,7 @@ pub(crate) struct ContextExtractorMiddleware<S> {
 
 impl<S, B> Service<http::Request<B>> for ContextExtractorMiddleware<S>
 where
-    S: Service<http::Request<B>, Response = http::Response<B>>
-        + Clone
-        + Send
-        + 'static,
+    S: Service<http::Request<B>, Response = http::Response<B>> + Clone + Send + 'static,
     S::Future: Send,
     B: Send + 'static,
 {
@@ -48,8 +43,8 @@ where
     type Error = S::Error;
     type Future = futures::future::BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
+    fn poll_ready(&mut self, ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(ctx)
     }
 
     fn call(&mut self, mut req: http::Request<B>) -> Self::Future {

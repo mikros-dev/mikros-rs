@@ -1,4 +1,3 @@
-
 // Module internal errors
 crate::module_errors!(
     Error{

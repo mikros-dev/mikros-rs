@@ -14,12 +14,12 @@ impl Service {
 
 #[async_trait::async_trait]
 impl mikros::service::lifecycle::Lifecycle for Service {
-    async fn on_start(&mut self, _ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, _ctx: Arc<Context>) -> merrors::Result<()> {
         println!("lifecycle on_start");
         Ok(())
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         println!("lifecycle on_finish");
         Ok(())
     }
@@ -27,7 +27,7 @@ impl mikros::service::lifecycle::Lifecycle for Service {
 
 #[async_trait::async_trait]
 impl mikros::service::script::ScriptService for Service {
-    async fn run(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn run(&self, ctx: Arc<Context>) -> merrors::Result<()> {
         ctx.logger().info("Start script service");
         example::execute_on(ctx, |api| {
             api.do_something();

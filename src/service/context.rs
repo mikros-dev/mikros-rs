@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use futures::lock::Mutex;
+use std::sync::Arc;
 
-use crate::service::errors;
 use crate::definition::Definitions;
 use crate::env::Env;
-use crate::{errors as merrors, logger, plugin};
+use crate::service::errors::Error;
+use crate::{errors, logger, plugin};
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.
@@ -23,13 +23,13 @@ impl Context {
         logger: Arc<logger::Logger>,
         definitions: Arc<Definitions>,
         features: Vec<Box<dyn plugin::feature::Feature>>,
-    ) -> merrors::Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             logger,
             envs,
             definitions,
             features: Arc::new(Mutex::new(features)),
-        })
+        }
     }
 
     /// Gives the service access to the current logger, so it can display
@@ -71,29 +71,50 @@ impl Context {
     pub fn client_connection_url(&self, client_name: &str) -> String {
         match self.definitions.client(client_name) {
             Some(c) => format!("{}:{}", c.host, c.port),
-            None => format!("{}.{}:{}", client_name, self.envs.coupled_namespace.clone(), self.envs.coupled_port)
+            None => format!(
+                "{}.{}:{}",
+                client_name,
+                self.envs.coupled_namespace.clone(),
+                self.envs.coupled_port
+            ),
         }
     }
 
     /// On success, returns the feature found inside the context.
-    pub async fn feature(&self, name: &str) -> Result<Box<dyn plugin::feature::Feature>, merrors::ServiceError> {
-        match self.features.lock().await.iter().find(|f| f.name() == name).cloned() {
+    pub async fn feature(
+        &self,
+        name: &str,
+    ) -> errors::Result<Box<dyn plugin::feature::Feature>> {
+        match self
+            .features
+            .lock()
+            .await
+            .iter()
+            .find(|f| f.name() == name)
+            .cloned()
+        {
             None => {
-                let error = errors::Error::FeatureNotFound(name.to_string());
-                Err(merrors::ServiceError::from_error(self.clone().into(), error.into()))
-            },
+                let error = Error::FeatureNotFound(name.to_string());
+                Err(errors::ServiceError::from_error(
+                    self.clone().into(),
+                    error.into(),
+                ))
+            }
             Some(f) => {
                 if !f.is_enabled() {
-                    let error = errors::Error::FeatureDisabled(name.to_string());
-                    return Err(merrors::ServiceError::from_error(self.clone().into(), error.into()));
+                    let error = Error::FeatureDisabled(name.to_string());
+                    return Err(errors::ServiceError::from_error(
+                        self.clone().into(),
+                        error.into(),
+                    ));
                 }
 
                 Ok(f)
-            },
+            }
         }
     }
 
-    pub(crate) async fn initialize_features(&mut self) -> Result<(), merrors::ServiceError> {
+    pub(crate) async fn initialize_features(&mut self) -> errors::Result<()> {
         for feature in self.features.lock().await.iter_mut() {
             if feature.can_be_initialized(self.definitions.clone(), self.envs.clone())? {
                 feature.initialize(self.clone().into()).await?;
@@ -123,13 +144,16 @@ where
 /// A macro to help service coupling using gRPC connections.
 #[macro_export]
 macro_rules! link_grpc_service {
-    ($context:ident, $client:ident, $client_name:expr) => {
-        {
-            let url = $context.client_connection_url($client_name);
-            match $client::connect(url).await {
-                Ok(c) => c,
-                Err(e) => return Err(mikros::errors::ServiceError::custom($context, &e.to_string()))
+    ($context:ident, $client:ident, $client_name:expr) => {{
+        let url = $context.client_connection_url($client_name);
+        match $client::connect(url).await {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(mikros::errors::ServiceError::custom(
+                    $context,
+                    &e.to_string(),
+                ))
             }
         }
-    };
+    }};
 }

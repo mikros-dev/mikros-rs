@@ -66,7 +66,7 @@ where
         + 'static,
     S::Future: 'static + Send,
 {
-    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> merrors::Result<()> {
         if let Some(lifecycle) = &self.lifecycle {
             return lifecycle.lock().await.on_start(ctx).await;
         }
@@ -74,7 +74,7 @@ where
         Ok(())
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> merrors::Result<()> {
         if let Some(lifecycle) = &self.lifecycle {
             return lifecycle.lock().await.on_finish().await;
         }
@@ -104,7 +104,7 @@ where
         definitions: Arc<definition::Definitions>,
         envs: Arc<env::Env>,
         _: HashMap<String, serde_json::Value>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         match definitions.get_service_type(definition::ServiceKind::Grpc) {
             Err(e) => return Err(merrors::ServiceError::from_error(ctx.clone(), e.into())),
             Ok(service_type) => {
@@ -133,7 +133,7 @@ where
         &self,
         ctx: Arc<Context>,
         shutdown_rx: watch::Receiver<()>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> merrors::Result<()> {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), self.port as u16);
 
         let shutdown_signal = async {
@@ -154,6 +154,7 @@ where
             .await
         {
             let grpc_error = errors::Error::TransportInitFailure(e.to_string());
+
             return Err(merrors::ServiceError::internal(
                 ctx.clone(),
                 &grpc_error.description(),

@@ -23,7 +23,10 @@ impl LayerBuilder {
         self
     }
 
-    pub(crate) fn with_constant_fields(mut self, fields: indexmap::IndexMap<String, serde_json::Value>) -> Self {
+    pub(crate) fn with_constant_fields(
+        mut self,
+        fields: indexmap::IndexMap<String, serde_json::Value>,
+    ) -> Self {
         self.constant_fields = fields;
         self
     }
@@ -43,9 +46,13 @@ pub(crate) struct Layer {
 
 impl<S> tracing_subscriber::Layer<S> for Layer
 where
-    S: Subscriber
+    S: Subscriber,
 {
-    fn on_event(&self, event: &tracing::Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
+    fn on_event(
+        &self,
+        event: &tracing::Event<'_>,
+        _ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) {
         let mut now = chrono::Local::now().to_rfc3339();
 
         if !self.local_timestamp {
@@ -57,7 +64,10 @@ where
 
         let mut output = indexmap::IndexMap::new();
         output.insert("timestamp".to_string(), serde_json::Value::String(now));
-        output.insert("level".to_string(), serde_json::Value::String(event.metadata().level().to_string()));
+        output.insert(
+            "level".to_string(),
+            serde_json::Value::String(event.metadata().level().to_string()),
+        );
 
         let message = visitor.0.remove("message").unwrap();
         output.insert("message".to_string(), message);
@@ -103,12 +113,15 @@ impl tracing::field::Visit for FieldVisitor {
     fn record_str(&mut self, field: &Field, value: &str) {
         match serde_json::from_str::<serde_json::Value>(value) {
             Ok(v) => self.0.insert(field.name().to_string(), v),
-            Err(_) => self.0.insert(field.name().to_string(), value.to_string().into())
+            Err(_) => self
+                .0
+                .insert(field.name().to_string(), value.to_string().into()),
         };
     }
 
     fn record_error(&mut self, field: &Field, value: &(dyn Error + 'static)) {
-        self.0.insert(field.name().to_string(), value.to_string().into());
+        self.0
+            .insert(field.name().to_string(), value.to_string().into());
     }
 
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {

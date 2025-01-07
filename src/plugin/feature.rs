@@ -13,8 +13,10 @@ use crate::service::context::Context;
 /// service_api method), one can do the following:
 ///
 /// ```ignore
+/// use std::sync::Arc;
+///
 /// use mikros::service::context::Context;
-/// use mikros::{errors as merrors, plugin};
+/// use mikros::{errors, plugin};
 ///
 /// pub trait ExampleAPI {
 ///     fn do_something(&self);
@@ -24,9 +26,9 @@ use crate::service::context::Context;
 ///
 /// /// Retrieves the feature API to be used inside a service and, if found, calls
 /// /// a closure over with.
-/// pub async fn execute_on<F>(ctx: &Context, f: F) -> Result<(), merrors::ServiceError>
+/// pub async fn execute_on<F>(ctx: Arc<Context>, f: F) -> errors::Result<()>
 /// where
-///     F: FnOnce(&dyn ExampleAPI) -> Result<(), merrors::ServiceError>,
+///     F: FnOnce(&dyn ExampleAPI) -> errors::Result<()>,
 /// {
 ///     let feature = ctx.feature("simple_api").await?;
 ///     if let Some(api) = to_api(&feature) {
@@ -56,11 +58,15 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
     fn is_enabled(&self) -> bool;
 
     /// Checks if the feature can be initialized or not.
-    fn can_be_initialized(&self, definitions: Arc<Definitions>, envs: Arc<Env>) -> Result<bool, errors::ServiceError>;
+    fn can_be_initialized(
+        &self,
+        definitions: Arc<Definitions>,
+        envs: Arc<Env>,
+    ) -> errors::Result<bool>;
 
     /// Initializes everything the feature needs to run. Also, here is the place
     /// where, if it needs, some task should be put to execute.
-    async fn initialize(&mut self, ctx: Arc<Context>) -> Result<(), errors::ServiceError>;
+    async fn initialize(&mut self, ctx: Arc<Context>) -> errors::Result<()>;
 
     /// Release resources from the feature.
     async fn cleanup(&self);
@@ -103,9 +109,9 @@ macro_rules! impl_feature_public_api {
         pub async fn execute_on<F>(
             ctx: Arc<Context>,
             f: F,
-        ) -> Result<(), mikros::errors::ServiceError>
+        ) -> mikros::errors::Result<()>
         where
-            F: FnOnce(&dyn $api_trait) -> Result<(), mikros::errors::ServiceError>,
+            F: FnOnce(&dyn $api_trait) -> mikros::errors::Result<()>,
         {
             let feature = ctx.feature($feature_name).await?;
             if let Some(api) = to_api(&feature) {
@@ -115,9 +121,7 @@ macro_rules! impl_feature_public_api {
             Ok(())
         }
 
-        fn to_api(
-            feature: &Box<dyn plugin::feature::Feature>,
-        ) -> Option<&dyn $api_trait> {
+        fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn $api_trait> {
             feature
                 .service_api()?
                 .downcast_ref::<$api_struct>()

@@ -7,11 +7,11 @@ use tokio::sync::watch;
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
-use crate::{definition, env, errors as merrors, plugin};
+use crate::{definition, env, errors, plugin};
 
 #[async_trait::async_trait]
 pub trait ScriptService: ScriptServiceClone + Lifecycle + Send {
-    async fn run(&self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError>;
+    async fn run(&self, ctx: Arc<Context>) -> errors::Result<()>;
     async fn cleanup(&self, ctx: Arc<Context>);
 }
 
@@ -49,11 +49,11 @@ impl Script {
 
 #[async_trait::async_trait]
 impl Lifecycle for Script {
-    async fn on_start(&mut self, ctx: Arc<Context>) -> Result<(), merrors::ServiceError> {
+    async fn on_start(&mut self, ctx: Arc<Context>) -> errors::Result<()> {
         self.svc.lock().await.on_start(ctx).await
     }
 
-    async fn on_finish(&self) -> Result<(), merrors::ServiceError> {
+    async fn on_finish(&self) -> errors::Result<()> {
         self.svc.lock().await.on_finish().await
     }
 }
@@ -80,7 +80,7 @@ impl plugin::service::Service for Script {
         _: Arc<definition::Definitions>,
         _: Arc<env::Env>,
         _: HashMap<String, serde_json::Value>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> errors::Result<()> {
         Ok(())
     }
 
@@ -88,7 +88,7 @@ impl plugin::service::Service for Script {
         &self,
         ctx: Arc<Context>,
         _: watch::Receiver<()>,
-    ) -> Result<(), merrors::ServiceError> {
+    ) -> errors::Result<()> {
         self.svc.lock().await.run(ctx).await
     }
 

@@ -32,14 +32,14 @@ pub trait Service: ServiceClone + Lifecycle {
         definitions: Arc<definition::Definitions>,
         envs: Arc<env::Env>,
         options: HashMap<String, serde_json::Value>,
-    ) -> Result<(), errors::ServiceError>;
+    ) -> errors::Result<()>;
 
     /// Puts the service implementation to run.
     async fn run(
         &self,
         ctx: Arc<Context>,
         shutdown_rx: watch::Receiver<()>,
-    ) -> Result<(), errors::ServiceError>;
+    ) -> errors::Result<()>;
 
     /// Stops the current service implementation. The place to let the service
     /// execute its graceful shutdown.

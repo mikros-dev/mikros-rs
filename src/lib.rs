@@ -12,7 +12,7 @@ mod grpc;
 // Forward some declarations for applications.
 pub use axum;
 pub use futures::lock::Mutex;
-pub use tokio::sync::watch;
 pub use serde;
 pub use serde_derive;
 pub use serde_json;
+pub use tokio::sync::watch;
