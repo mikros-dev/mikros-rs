@@ -5,9 +5,10 @@ edition = "2021"
 
 [dependencies]
 example = { path = "../../features/example" }
-mikros = { path = "../../../" }
+mikros = { path = "../../../mikros" }
+
+# Dependencies required because we're building the proto using tonic_build.
 prost = "0.13.3"
-tokio = { version = "1.41.1", features = ["full"] }
 tonic = "0.12.3"
 
 [build-dependencies]

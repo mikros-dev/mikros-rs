@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use mikros::definition::Definitions;
 use mikros::env::Env;
-use mikros::{errors, impl_feature_public_api, plugin, serde_json};
 use mikros::service::context::Context;
+use mikros::{async_trait, errors, impl_feature_public_api, plugin, serde_json};
 
 /// The feature public API.
 pub trait ExampleAPI {
@@ -30,7 +30,11 @@ impl plugin::feature::Feature for Example {
         true
     }
 
-    fn can_be_initialized(&self, _definitions: Arc<Definitions>, _envs: Arc<Env>) -> errors::Result<bool> {
+    fn can_be_initialized(
+        &self,
+        _definitions: Arc<Definitions>,
+        _envs: Arc<Env>,
+    ) -> errors::Result<bool> {
         println!("example can_be_initialized");
         Ok(true)
     }

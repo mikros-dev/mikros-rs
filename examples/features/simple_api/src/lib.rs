@@ -2,10 +2,9 @@ use std::any::Any;
 use std::sync::Arc;
 
 use mikros::env::Env;
-use mikros::{errors, impl_feature_public_api, serde_json};
 use mikros::plugin;
 use mikros::service::context::Context;
-use serde_derive::Deserialize;
+use mikros::{async_trait, errors, impl_feature_public_api, serde_json};
 
 /// The feature public API.
 pub trait ExampleAPI {
@@ -14,10 +13,11 @@ pub trait ExampleAPI {
 
 #[derive(Clone, Default)]
 pub(crate) struct Example {
-    definitions: Definitions
+    definitions: Definitions,
 }
 
-#[derive(Clone, Default, Deserialize)]
+#[derive(Clone, Default, mikros::Deserialize)]
+#[serde(crate = "mikros::serde")]
 pub struct Definitions {
     enabled: bool,
     collections: Vec<String>,
@@ -41,7 +41,11 @@ impl plugin::feature::Feature for Example {
         self.definitions.enabled
     }
 
-    fn can_be_initialized(&self, definitions: Arc<mikros::definition::Definitions>, _: Arc<Env>) -> errors::Result<bool> {
+    fn can_be_initialized(
+        &self,
+        definitions: Arc<mikros::definition::Definitions>,
+        _: Arc<Env>,
+    ) -> errors::Result<bool> {
         println!("simple_api can_be_initialized");
 
         if let Some(defs) = definitions.load_feature::<Definitions>(self.name()) {

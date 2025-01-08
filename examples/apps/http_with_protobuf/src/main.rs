@@ -5,9 +5,11 @@ mod card {
 
 use std::sync::Arc;
 use std::collections::HashMap;
+
+use mikros::tokio;
 use mikros::errors::ServiceError;
 use mikros::service::{builder::ServiceBuilder, context};
-use tonic::{Request, Response, Status};
+use mikros::tonic::{Request, Response, Status};
 
 use api::router::Router;
 

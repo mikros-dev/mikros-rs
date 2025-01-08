@@ -1,14 +1,12 @@
 use crate::{Cronjob, CronjobService};
 
 pub struct CronjobBuilder {
-    handler: Box<dyn CronjobService>
+    handler: Box<dyn CronjobService>,
 }
 
 impl CronjobBuilder {
     pub fn new(svc: Box<dyn CronjobService>) -> Self {
-        Self {
-            handler: svc
-        }
+        Self { handler: svc }
     }
 
     /// Builds the service to be executed.

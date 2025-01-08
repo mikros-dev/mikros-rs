@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-trait = "0.1.83"
-mikros = { path = "../../../" }
-serde_derive = "1.0.214"
-tokio = { version = "1.41.1", features = ["full"] }
-serde = { version = "1.0.215", features = ["derive"] }
+mikros = { path = "../../../mikros" }
+
+[workspace]

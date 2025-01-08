@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::routing::get;
-use futures::lock::Mutex;
-use mikros::errors;
+use mikros::{async_trait, axum, errors, Mutex, tokio};
 use mikros::http::ServiceState;
 use mikros::service::builder::ServiceBuilder;
 use mikros::service::lifecycle::Lifecycle;
