@@ -5,10 +5,9 @@ use std::sync::Arc;
 
 use mikros::definition::ServiceKind;
 use mikros::env::Env;
-use mikros::{errors, plugin, Mutex, serde_json};
 use mikros::service::context::Context;
 use mikros::service::lifecycle::Lifecycle;
-use serde_derive::Deserialize;
+use mikros::{async_trait, errors, plugin, serde_json, Mutex};
 
 #[async_trait::async_trait]
 pub trait CronjobService: Send + Sync {
@@ -21,7 +20,8 @@ pub struct Cronjob {
     definitions: Option<Definitions>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, mikros::Deserialize)]
+#[serde(crate = "mikros::serde")]
 struct Definitions {
     frequency: String,
     days: Vec<String>,
@@ -56,6 +56,10 @@ impl plugin::service::Service for Cronjob {
         }
     }
 
+    fn mode(&self) -> plugin::service::ServiceExecutionMode {
+        plugin::service::ServiceExecutionMode::NonBlock
+    }
+
     fn initialize(
         &mut self,
         _: Arc<Context>,
@@ -74,7 +78,7 @@ impl plugin::service::Service for Cronjob {
     async fn run(
         &self,
         ctx: Arc<Context>,
-        _shutdown_rx: tokio::sync::watch::Receiver<()>,
+        _shutdown_rx: mikros::tokio::sync::watch::Receiver<()>,
     ) -> errors::Result<()> {
         // A real cronjob service would schedule the task to execute using
         // definitions settings. We just call the handler...
@@ -83,9 +87,5 @@ impl plugin::service::Service for Cronjob {
 
     async fn stop(&self, _ctx: Arc<Context>) {
         // noop
-    }
-
-    fn mode(&self) -> plugin::service::ServiceExecutionMode {
-        plugin::service::ServiceExecutionMode::NonBlock
     }
 }

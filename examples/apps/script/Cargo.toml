@@ -4,7 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-trait = "0.1.83"
 example = { path = "../../features/example" }
-mikros = { path = "../../../" }
-tokio = { version = "1.41.1", features = ["full"] }
+mikros = { path = "../../../mikros" }

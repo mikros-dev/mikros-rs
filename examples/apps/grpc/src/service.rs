@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 pub mod helloworld {
@@ -6,7 +5,7 @@ pub mod helloworld {
 }
 
 use mikros::service::context;
-use tonic::{Request, Response, Status};
+use mikros::tonic::{Request, Response, Status};
 
 use helloworld::greeter_server::{Greeter, GreeterServer};
 use helloworld::{HelloReply, HelloRequest};
@@ -49,7 +48,7 @@ impl Greeter for Service {
             api.do_something();
             Ok(())
         })
-            .await;
+        .await;
 
         let reply = HelloReply {
             message: format!("Hello, {}!", request.into_inner().name),

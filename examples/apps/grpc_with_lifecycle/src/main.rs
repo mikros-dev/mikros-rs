@@ -5,9 +5,9 @@ pub mod helloworld {
 }
 
 use mikros::service::{builder::ServiceBuilder, context, lifecycle};
-use mikros::link_grpc_service;
-use tonic::transport::Channel;
-use tonic::{Request, Response, Status};
+use mikros::tonic::transport::Channel;
+use mikros::tonic::{Request, Response, Status};
+use mikros::{errors, link_grpc_service, tokio};
 
 use crate::helloworld::greeter_client::GreeterClient;
 use helloworld::greeter_server::{Greeter, GreeterServer};
@@ -68,7 +68,7 @@ pub struct Context {
 
 #[tonic::async_trait]
 impl lifecycle::Lifecycle for Context {
-    async fn on_start(&mut self, ctx: Arc<context::Context>) -> mikros::errors::Result<()> {
+    async fn on_start(&mut self, ctx: Arc<context::Context>) -> errors::Result<()> {
         println!("grpc on_start called");
         self.value = 42;
         self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
