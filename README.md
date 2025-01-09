@@ -47,7 +47,7 @@ Building a service using the framework's SDK must adhere to the following points
 ### Example of a service
 
 The following example demonstrates how to create a service of a `script`
-type. The `Service` structure implements the trait [ScriptService](src/service/script/mod.rs)
+type. The `Service` structure implements the trait [ScriptService](mikros/src/service/script.rs)
 that makes it being supported by this type of service inside the framework.
 
 ```rust
