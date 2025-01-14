@@ -39,14 +39,13 @@ impl Env {
         match Env::from_env(std::collections::HashMap::new()) {
             Err(e) => Err(errors::Error::SettingsError(e.to_string())),
             Ok(mut env) => {
-                env.defined_envs = env.load_defined_envs(defs)?;
+                env.defined_envs = Self::load_defined_envs(defs)?;
                 Ok(Arc::new(env))
             }
         }
     }
 
     fn load_defined_envs(
-        &self,
         defs: &Definitions,
     ) -> Result<std::collections::HashMap<String, String>, errors::Error> {
         let mut envs = std::collections::HashMap::new();

@@ -97,7 +97,7 @@ impl Clone for Box<dyn Feature> {
 /// This macro adds APIs to the feature allowing it to be used by services
 /// in an easy way.
 ///
-/// The execute_on function receives a closure that will be executed in the
+/// The `execute_on` function receives a closure that will be executed in the
 /// feature, if it is enabled.
 #[macro_export]
 macro_rules! impl_feature_public_api {
@@ -106,10 +106,7 @@ macro_rules! impl_feature_public_api {
             Box::new($api_struct::default())
         }
 
-        pub async fn execute_on<F>(
-            ctx: Arc<Context>,
-            f: F,
-        ) -> mikros::errors::Result<()>
+        pub async fn execute_on<F>(ctx: Arc<Context>, f: F) -> mikros::errors::Result<()>
         where
             F: FnOnce(&dyn $api_trait) -> mikros::errors::Result<()>,
         {
