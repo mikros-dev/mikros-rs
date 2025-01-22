@@ -18,7 +18,7 @@ impl Args {
                 args
             }
             Err(msg) => {
-                eprintln!("{}", msg);
+                eprintln!("{msg}");
                 std::process::exit(1);
             }
         }
@@ -45,12 +45,12 @@ impl Args {
                 "--config" => match iter.peek() {
                     None => return Err("error: --config option requires a file path".to_string()),
                     Some((_, next_arg)) => {
-                        config.config_path = Some(next_arg.to_string());
+                        config.config_path = Some((*next_arg).to_string());
                         iter.next();
                     }
                 },
                 _ => {
-                    return Err(format!("unknown argument: {}", arg));
+                    return Err(format!("unknown argument: {arg}"));
                 }
             }
         }
@@ -59,7 +59,7 @@ impl Args {
     }
 
     fn usage(service_name: &str) {
-        println!("Usage: {} [OPTIONS]", service_name);
+        println!("Usage: {service_name} [OPTIONS]");
         println!();
         println!("Options:");
         println!("  -h, --help      Print this help menu.");

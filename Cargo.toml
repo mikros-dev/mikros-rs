@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "mikros",
+    "mikros-macros",
+    "mikros-tests",
 ]
 
 [workspace.package]

@@ -45,7 +45,7 @@ impl Http {
         L: Lifecycle + 'static,
     {
         let mut s = Self::new(router);
-        s.lifecycle = Some(lifecycle.clone());
+        s.lifecycle = Some(lifecycle);
         s
     }
 
@@ -54,7 +54,7 @@ impl Http {
         state: Arc<Mutex<dyn Any + Send + Sync>>,
     ) -> Self {
         let mut s = Self::new(router);
-        s.app_state = Some(state.clone());
+        s.app_state = Some(state);
         s
     }
 
@@ -67,8 +67,8 @@ impl Http {
         L: Lifecycle + 'static,
     {
         let mut s = Self::new(router);
-        s.lifecycle = Some(lifecycle.clone());
-        s.app_state = Some(state.clone());
+        s.lifecycle = Some(lifecycle);
+        s.app_state = Some(state);
         s
     }
 
@@ -83,7 +83,7 @@ impl Http {
         let mut router = Router::new();
 
         if self.internal_health_handler {
-            router = router.route("/health", get(health::handler))
+            router = router.route("/health", get(health::handler));
         }
 
         router
@@ -154,11 +154,7 @@ impl plugin::service::Service for Http {
         Ok(())
     }
 
-    async fn run(
-        &self,
-        ctx: Arc<Context>,
-        shutdown_rx: Receiver<()>,
-    ) -> merrors::Result<()> {
+    async fn run(&self, ctx: Arc<Context>, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();

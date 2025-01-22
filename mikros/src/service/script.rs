@@ -84,15 +84,11 @@ impl plugin::service::Service for Script {
         Ok(())
     }
 
-    async fn run(
-        &self,
-        ctx: Arc<Context>,
-        _: watch::Receiver<()>,
-    ) -> errors::Result<()> {
+    async fn run(&self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
         self.svc.lock().await.run(ctx).await
     }
 
     async fn stop(&self, ctx: Arc<Context>) {
-        self.svc.lock().await.cleanup(ctx).await
+        self.svc.lock().await.cleanup(ctx).await;
     }
 }

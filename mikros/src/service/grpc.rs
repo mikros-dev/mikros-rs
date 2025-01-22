@@ -42,7 +42,7 @@ where
         Self {
             port: 0,
             server,
-            lifecycle: Some(lifecycle.clone()),
+            lifecycle: Some(lifecycle),
         }
     }
 

@@ -34,7 +34,7 @@ impl<'a> Deserialize<'a> for Service {
                         parts[1]
                             .parse::<i32>()
                             .map_err(|_| E::custom("invalid port number"))?,
-                    )
+                    );
                 }
 
                 let service_kind = match parts[0] {

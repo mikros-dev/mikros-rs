@@ -63,11 +63,13 @@ impl Context {
     }
 
     /// Returns the current service name.
+    #[must_use]
     pub fn service_name(&self) -> String {
         self.definitions.name.clone()
     }
 
     /// Returns the URL connection string for linking services.
+    #[must_use]
     pub fn client_connection_url(&self, client_name: &str) -> String {
         match self.definitions.client(client_name) {
             Some(c) => format!("{}:{}", c.host, c.port),
@@ -81,10 +83,7 @@ impl Context {
     }
 
     /// On success, returns the feature found inside the context.
-    pub async fn feature(
-        &self,
-        name: &str,
-    ) -> errors::Result<Box<dyn plugin::feature::Feature>> {
+    pub async fn feature(&self, name: &str) -> errors::Result<Box<dyn plugin::feature::Feature>> {
         match self
             .features
             .lock()
@@ -127,12 +126,13 @@ impl Context {
     pub(crate) async fn cleanup_features(&mut self) {
         for feature in self.features.lock().await.iter() {
             if feature.is_enabled() {
-                feature.cleanup().await
+                feature.cleanup().await;
             }
         }
     }
 }
 
+// TODO: Implement error here
 /// Retrieves the mikros Context from an RPC request argument.
 pub fn from_request<B>(request: &tonic::Request<B>) -> Arc<Context>
 where

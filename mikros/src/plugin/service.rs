@@ -35,11 +35,7 @@ pub trait Service: ServiceClone + Lifecycle {
     ) -> errors::Result<()>;
 
     /// Puts the service implementation to run.
-    async fn run(
-        &self,
-        ctx: Arc<Context>,
-        shutdown_rx: watch::Receiver<()>,
-    ) -> errors::Result<()>;
+    async fn run(&self, ctx: Arc<Context>, shutdown_rx: watch::Receiver<()>) -> errors::Result<()>;
 
     /// Stops the current service implementation. The place to let the service
     /// execute its graceful shutdown.

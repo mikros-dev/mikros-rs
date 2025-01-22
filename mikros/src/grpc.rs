@@ -12,7 +12,7 @@ pub(crate) struct ContextExtractor {
 
 impl ContextExtractor {
     pub(crate) fn new(ctx: Arc<context::Context>) -> Self {
-        ContextExtractor { ctx: ctx.clone() }
+        ContextExtractor { ctx }
     }
 }
 

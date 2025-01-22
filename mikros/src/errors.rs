@@ -24,12 +24,12 @@ pub(crate) enum Error {
 impl Error {
     pub(crate) fn description(&self) -> String {
         match self {
-            Error::Internal(msg) => msg.to_string(),
             Error::NotFound => "not found".to_string(),
             Error::InvalidArguments => "invalid arguments".to_string(),
-            Error::PreconditionFailed(msg) => msg.to_string(),
-            Error::Rpc(msg) => msg.to_string(),
-            Error::Custom(msg) => msg.to_string(),
+            Error::PreconditionFailed(msg)
+            | Error::Rpc(msg)
+            | Error::Internal(msg)
+            | Error::Custom(msg) => msg.to_string(),
             Error::PermissionDenied => "no permission to access the service".to_string(),
         }
     }
@@ -89,12 +89,12 @@ impl ServiceError {
             service_name: Some(ctx.service_name()),
             attributes: None,
             destination: None,
-            logger: Self::get_logger(ctx.clone()),
+            logger: Self::get_logger(&ctx),
             concealable_attributes: ctx.envs.response_fields(),
         }
     }
 
-    fn get_logger(ctx: Arc<Context>) -> Option<Arc<Logger>> {
+    fn get_logger(ctx: &Arc<Context>) -> Option<Arc<Logger>> {
         let logger = ctx.definitions().log();
 
         if logger.display_errors.unwrap() {
@@ -190,7 +190,7 @@ impl ServiceError {
 
     // Translates an Error enum into a ServiceError object.
     pub(crate) fn from_error(ctx: Arc<Context>, error: Error) -> Self {
-        Self::new(ctx.clone(), error)
+        Self::new(ctx, error)
     }
 }
 
@@ -210,7 +210,7 @@ impl From<ServiceError> for tonic::Status {
             }
 
             let message = error.message.clone();
-            logger.errorf(&message.unwrap(), error_attributes)
+            logger.errorf(&message.unwrap(), error_attributes);
         }
 
         let mut error = error;
@@ -219,15 +219,15 @@ impl From<ServiceError> for tonic::Status {
         // It's worth notice that from now on, we only have information that
         // was serialized.
         if let Some(attributes) = &error.concealable_attributes {
-            attributes.iter().for_each(|field| {
+            for field in attributes {
                 let field = field.to_lowercase();
 
                 if field == "message" {
-                    error.message = None
+                    error.message = None;
                 }
 
                 if field == "service_name" {
-                    error.service_name = None
+                    error.service_name = None;
                 }
 
                 if field == "attributes" {
@@ -237,7 +237,7 @@ impl From<ServiceError> for tonic::Status {
                 if field == "destination" {
                     error.destination = None;
                 }
-            });
+            }
         }
 
         // Return our error always as an (gRPC) Unknown?
@@ -260,8 +260,6 @@ impl IntoResponse for ServiceError {
             "ValidationError" => StatusCode::BAD_REQUEST,
             "ConditionError" => StatusCode::PRECONDITION_FAILED,
             "PermissionError" => StatusCode::FORBIDDEN,
-            "RPCError" => StatusCode::INTERNAL_SERVER_ERROR,
-            "CustomError" => StatusCode::INTERNAL_SERVER_ERROR,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

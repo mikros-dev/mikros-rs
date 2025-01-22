@@ -91,15 +91,11 @@ impl plugin::service::Service for Native {
         Ok(())
     }
 
-    async fn run(
-        &self,
-        ctx: Arc<Context>,
-        _: watch::Receiver<()>,
-    ) -> errors::Result<()> {
+    async fn run(&self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
         self.svc.lock().await.start(ctx).await
     }
 
     async fn stop(&self, ctx: Arc<Context>) {
-        self.svc.lock().await.stop(ctx).await
+        self.svc.lock().await.stop(ctx).await;
     }
 }

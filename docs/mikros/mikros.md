@@ -119,7 +119,7 @@ async fn main() {
 }
 ```
 
-The complete example can be found inside the [examples](../examples/apps/native) directory.
+The complete example can be found inside the [examples](../../examples/apps/native) directory.
 
 ### Service definitions file
 
@@ -249,7 +249,7 @@ is initializing.
 - a public API for applications to use it.
 
 For an example of how to implement, register and use external features you can
-check the [features](../examples/features) examples directory.
+check the [features](../../examples/features) examples directory.
 
 ### Extending service kind
 
@@ -269,6 +269,6 @@ service type such as:
 - its execution mode (blocking or non-blocking).
 - and its implementation.
 
-The [services](../examples/services) directory shows an example of how to create
-a new service kind and the [cronjob](../examples/apps/cronjob_service) service
+The [services](../../examples/services) directory shows an example of how to create
+a new service kind and the [cronjob](../../examples/apps/cronjob_service) service
 shows how to register it and use it.

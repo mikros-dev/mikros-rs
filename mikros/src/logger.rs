@@ -17,7 +17,7 @@ pub struct Logger {
     reload: Handle<EnvFilter, Layered<Layer, Registry>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Level {
     Debug,
     Info,
@@ -44,14 +44,14 @@ impl FromStr for Level {
             "info" => Ok(Level::Info),
             "warning" => Ok(Level::Warning),
             "error" => Ok(Level::Error),
-            _ => Err(format!("unknown log level {}", s)),
+            _ => Err(format!("unknown log level {s}")),
         }
     }
 }
 
 impl Logger {
     pub(crate) fn new(builder: &LoggerBuilder) -> Self {
-        let level: tracing::Level = builder.level.clone().into();
+        let level: tracing::Level = builder.level.into();
         let env_filter = EnvFilter::new(level.to_string());
         let (filter_layer, reload) = tracing_subscriber::reload::Layer::new(env_filter);
 
@@ -72,38 +72,38 @@ impl Logger {
     }
 
     pub fn debug(&self, message: &str) {
-        self.logf(Level::Debug, message, None)
+        Self::logf(Level::Debug, message, None);
     }
 
     pub fn info(&self, message: &str) {
-        self.logf(Level::Info, message, None)
+        Self::logf(Level::Info, message, None);
     }
 
     pub fn warning(&self, message: &str) {
-        self.logf(Level::Warning, message, None)
+        Self::logf(Level::Warning, message, None);
     }
 
     pub fn error(&self, message: &str) {
-        self.logf(Level::Error, message, None)
+        Self::logf(Level::Error, message, None);
     }
 
     pub fn debugf(&self, message: &str, fields: serde_json::Value) {
-        self.logf(Level::Debug, message, Some(fields))
+        Self::logf(Level::Debug, message, Some(fields));
     }
 
     pub fn infof(&self, message: &str, fields: serde_json::Value) {
-        self.logf(Level::Info, message, Some(fields))
+        Self::logf(Level::Info, message, Some(fields));
     }
 
     pub fn warningf(&self, message: &str, fields: serde_json::Value) {
-        self.logf(Level::Warning, message, Some(fields))
+        Self::logf(Level::Warning, message, Some(fields));
     }
 
     pub fn errorf(&self, message: &str, fields: serde_json::Value) {
-        self.logf(Level::Error, message, Some(fields))
+        Self::logf(Level::Error, message, Some(fields));
     }
 
-    fn logf(&self, level: Level, message: &str, data: Option<serde_json::Value>) {
+    fn logf(level: Level, message: &str, data: Option<serde_json::Value>) {
         let mut fields = indexmap::IndexMap::new();
         if let Some(serde_json::Value::Object(data_map)) = data {
             fields.extend(data_map);

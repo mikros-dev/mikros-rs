@@ -16,4 +16,4 @@ is executed.
 - stop: the place to finish everything that was initialized before.
 
 For more details about how to implement a native service check the following
-[example](../examples/apps/native).
+[example](../../examples/apps/native).

@@ -17,7 +17,7 @@ pub fn to_bool(
                 "false" | "0" => Ok(false),
                 _ => Err(errors::ServiceError::internal(
                     ctx,
-                    format!("invalid header value {}", value).as_str(),
+                    format!("invalid header value {value}").as_str(),
                 )),
             };
         }
@@ -25,7 +25,7 @@ pub fn to_bool(
 
     Err(errors::ServiceError::internal(
         ctx,
-        format!("missing header {}", key).as_str(),
+        format!("missing header {key}").as_str(),
     ))
 }
 
@@ -44,6 +44,6 @@ pub fn to_string(
 
     Err(errors::ServiceError::internal(
         ctx,
-        format!("missing header {}", key).as_str(),
+        format!("missing header {key}").as_str(),
     ))
 }

@@ -106,7 +106,7 @@ impl Display for ServiceKind {
             ServiceKind::Http => write!(f, "http"),
             ServiceKind::Native => write!(f, "native"),
             ServiceKind::Script => write!(f, "script"),
-            ServiceKind::Custom(s) => write!(f, "{}", s),
+            ServiceKind::Custom(s) => write!(f, "{s}"),
         }
     }
 }
@@ -155,19 +155,23 @@ impl Definitions {
 
     fn validate(&self, custom_info: Option<CustomServiceInfo>) -> Result<(), errors::Error> {
         let context = custom_info.unwrap_or_else(|| {
-            let c: CustomServiceInfo = Default::default();
+            let c: CustomServiceInfo = CustomServiceInfo::default();
             c
         });
 
         match self.validate_with_args(&context) {
             Err(e) => Err(errors::Error::InvalidDefinitions(e.to_string())),
-            Ok(_) => match self.types.is_empty() {
-                true => Err(errors::Error::EmptyServiceType),
-                false => Ok(()),
-            },
+            Ok(()) => {
+                if self.types.is_empty() {
+                    Err(errors::Error::EmptyServiceType)
+                } else {
+                    Ok(())
+                }
+            }
         }
     }
 
+    #[allow(clippy::needless_pass_by_value)]
     pub(crate) fn get_service_type(
         &self,
         kind: ServiceKind,
@@ -194,7 +198,7 @@ impl Definitions {
     where
         T: DeserializeOwned,
     {
-        self.decode(self.feature(feature))
+        Self::decode(self.feature(feature))
     }
 
     fn feature(&self, feature: &str) -> Option<serde_json::Value> {
@@ -208,7 +212,7 @@ impl Definitions {
     where
         T: DeserializeOwned,
     {
-        self.decode(self.service(&service_kind))
+        Self::decode(self.service(&service_kind))
     }
 
     fn service(&self, service_kind: &ServiceKind) -> Option<serde_json::Value> {
@@ -218,7 +222,7 @@ impl Definitions {
         }
     }
 
-    fn decode<T>(&self, data: Option<serde_json::Value>) -> Option<T>
+    fn decode<T>(data: Option<serde_json::Value>) -> Option<T>
     where
         T: DeserializeOwned,
     {

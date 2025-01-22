@@ -17,7 +17,7 @@ fn validate_service_types(
     }
 
     for t in types {
-        validate_service_type(t, context)?
+        validate_service_type(t, context)?;
     }
 
     Ok(())

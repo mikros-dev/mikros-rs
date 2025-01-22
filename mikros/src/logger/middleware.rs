@@ -56,7 +56,7 @@ where
         let mut now = chrono::Local::now().to_rfc3339();
 
         if !self.local_timestamp {
-            now = chrono::Utc::now().to_rfc3339()
+            now = chrono::Utc::now().to_rfc3339();
         }
 
         let mut visitor = FieldVisitor::default();
@@ -125,7 +125,7 @@ impl tracing::field::Visit for FieldVisitor {
     }
 
     fn record_debug(&mut self, field: &Field, value: &dyn Debug) {
-        let v = format!("{:?}", value);
+        let v = format!("{value:?}");
         match serde_json::from_str::<serde_json::Value>(&v) {
             Ok(value) => self.0.insert(field.name().to_string(), value),
             Err(_) => self.0.insert(field.name().to_string(), v.into()),

@@ -21,6 +21,6 @@ API to initialize the service.
 
 The examples directory has the following examples using the same steps described:
 
-* [grpc](../examples/apps/grpc): a gRPC service which implements its API.
-* [grpc with lifecycle](../examples/apps/grpc_with_lifecycle): a gRPC service
+* [grpc](../../examples/apps/grpc): a gRPC service which implements its API.
+* [grpc with lifecycle](../../examples/apps/grpc_with_lifecycle): a gRPC service
 that also implements the Lifecycle trait.
