@@ -9,4 +9,4 @@ To be a script service it must implement the [ScriptService](../src/service/scri
 trait to standardize their lifecycle behavior.
 
 For more details about how to implement a script service check the following
-[example](../examples/apps/script).
+[example](../../examples/apps/script).

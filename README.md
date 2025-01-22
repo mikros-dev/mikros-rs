@@ -18,15 +18,15 @@ standalone applications that execute its task and finishes.
 
 Currently, it has support for the following kind of applications:
 
-* [gRPC](docs/service_grpc.md): an application with an API defined from a [protobuf](https://protobuf.dev) file.
-* [HTTP](docs/service_http.md): an HTTP server-type application.
-* [native](docs/service_native.md): a general-purpose application, without a defined API, with the ability to execute any code for long periods
-* [script](docs/service_script.md): also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
+* [gRPC](docs/mikros/service_grpc.md): an application with an API defined from a [protobuf](https://protobuf.dev) file.
+* [HTTP](docs/mikros/service_http.md): an HTTP server-type application.
+* [native](docs/mikros/service_native.md): a general-purpose application, without a defined API, with the ability to execute any code for long periods
+* [script](docs/mikros/service_script.md): also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
 
 ### Documentation
 
 A more detailed documentation about the framework API and its features can be
-accessed at the [docs](docs/mikros.md) directory.
+accessed at the [docs](docs/mikros/mikros.md) directory.
 
 ### Service
 
