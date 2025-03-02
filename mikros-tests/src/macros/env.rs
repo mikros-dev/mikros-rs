@@ -31,6 +31,9 @@ mod tests {
             #[env(variable = "TEST_FOO3", default = "42")]
             foo3: Option<i32>,
 
+            #[env(variable = "TEST_FOO4", default = "true")]
+            foo4: Option<bool>,
+
             unused: bool,
             data: std::collections::HashMap<String, String>,
         }
@@ -48,7 +51,8 @@ mod tests {
         assert_eq!(e.foo2, None);
         assert_eq!(e.data.len(), 0);
         assert_eq!(e.bar, true);
-        assert_eq!(e.foo3, Some(42))
+        assert_eq!(e.foo3, Some(42));
+        assert_eq!(e.foo4, Some(true));
     }
 
     #[test]

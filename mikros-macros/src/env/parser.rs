@@ -13,27 +13,37 @@ impl FieldAttributes {
         self,
         field_name: &Ident,
         struct_name: &Ident,
-        is_option: bool,
+        field_type: &syn::Type,
     ) -> proc_macro::TokenStream {
+        // Check if we're dealing with an Option<T> member
+        let is_option = matches!(
+            &field_type,
+            syn::Type::Path(type_path) if type_path.path.segments.len() == 1
+                && type_path.path.segments[0].ident == "Option"
+        );
+
         let expanded = if let Some(env_name) = self.env_name {
+            let default_value = self.default_value.unwrap_or_else(|| "".to_string());
+
             if is_option {
                 quote! {
-                    #field_name: #struct_name::load_env(#env_name, &suffix, delimiter)
-                        .ok()
-                        .and_then(|v| v.parse().ok())
+                    #field_name: {
+                        let env_value = #struct_name::load_env(#env_name, &suffix, delimiter);
+                        match env_value {
+                            Ok(v) if v.is_empty() || v == "None" => None,
+                            Ok(v) => v.parse().ok(),
+                            Err(_) => if #default_value == "None" {
+                                None
+                            } else {
+                                #default_value.parse().ok()
+                            }
+                        }
+                    }
                 }
             } else {
-                let default_expr = if let Some(default_value) = self.default_value {
-                    quote! {
-                        .unwrap_or_else(|_| #default_value.to_string())
-                    }
-                } else {
-                    quote! {}
-                };
-
                 quote! {
                     #field_name: #struct_name::load_env(#env_name, &suffix, delimiter)
-                        #default_expr
+                        .unwrap_or_else(|_| #default_value.to_string())
                         .parse()
                         .expect("failed to parse environment variable")
                 }
@@ -114,15 +124,8 @@ fn parse_field(field: &Field, struct_name: &Ident) -> Result<TokenStream, String
         }
     }
 
-    // Check if we're dealing with an Option<T> member
-    let is_option = matches!(
-        &field.ty,
-        syn::Type::Path(type_path) if type_path.path.segments.len() == 1
-            && type_path.path.segments[0].ident == "Option"
-    );
-
     Ok(attributes
-        .into_token_stream(field_name, struct_name, is_option)
+        .into_token_stream(field_name, struct_name, &field.ty)
         .into())
 }
 

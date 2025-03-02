@@ -17,6 +17,7 @@ pub fn generate(input: DeriveInput) -> TokenStream {
             pub fn from_env() -> Self {
                 let suffix: Option<String> = None;
                 let delimiter = #delimiter;
+                let use_zero = false;
 
                 Self {
                     #(#field_initializers),*
@@ -26,6 +27,7 @@ pub fn generate(input: DeriveInput) -> TokenStream {
             pub fn from_env_with_suffix(suffix: &str) -> Self {
                 let suffix = Some(suffix.to_string());
                 let delimiter = #delimiter;
+                let use_zero = false; // this should be an argument
 
                 Self {
                     #(#field_initializers),*
@@ -42,10 +44,6 @@ pub fn generate(input: DeriveInput) -> TokenStream {
             }
         }
     };
-
-    if !cfg!(test) {
-        println!("{expanded}");
-    }
 
     expanded
 }
