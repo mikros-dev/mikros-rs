@@ -23,3 +23,6 @@ keywords = [
 categories = [
     "web-programming"
 ]
+
+[workspace.dependencies]
+mikros-tests = { path = "mikros-tests" }

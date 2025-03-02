@@ -19,8 +19,20 @@ mod tests {
             #[env(variable = "TEST_1_LIMIT", default = "0")]
             limit: i32,
 
-            #[env(skip)]
+            #[env(variable = "TEST_BAR", default = "true")]
+            bar: bool,
+
+            #[env(variable = "TEST_FOO", default = "None")]
+            foo: Option<i32>,
+
+            #[env(variable = "TEST_FOO2", default = "None")]
+            foo2: Option<i32>,
+
+            #[env(variable = "TEST_FOO3", default = "42")]
+            foo3: Option<i32>,
+
             unused: bool,
+            data: std::collections::HashMap<String, String>,
         }
 
         std::env::set_var("TEST_1_NAME", "New Name");
@@ -32,11 +44,17 @@ mod tests {
         assert_eq!(e.age, 84);
         assert_eq!(e.limit, 100);
         assert_eq!(e.unused, false);
+        assert_eq!(e.foo, None);
+        assert_eq!(e.foo2, None);
+        assert_eq!(e.data.len(), 0);
+        assert_eq!(e.bar, true);
+        assert_eq!(e.foo3, Some(42))
     }
 
     #[test]
     fn test_struct_load_from_env_with_suffix() {
         #[derive(Env, Debug)]
+        #[env(suffix_delimiter = "_")]
         struct Example {
             #[env(variable = "TEST_2_NAME", default = "John Doe")]
             name: String,
@@ -55,7 +73,7 @@ mod tests {
         std::env::set_var("TEST_2_AGE_dev", "841");
         std::env::set_var("TEST_2_LIMIT_dev", "1001");
 
-        let e = Example::from_env_with_suffix("_dev");
+        let e = Example::from_env_with_suffix("dev");
         assert_eq!(e.name, "New Name 2");
         assert_eq!(e.age, 841);
         assert_eq!(e.limit, 1001);
