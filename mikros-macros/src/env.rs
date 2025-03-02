@@ -17,17 +17,16 @@ pub fn generate(input: DeriveInput) -> TokenStream {
             pub fn from_env() -> Self {
                 let suffix: Option<String> = None;
                 let delimiter = #delimiter;
-                let use_zero = false;
+                let use_defaults = true;
 
                 Self {
                     #(#field_initializers),*
                 }
             }
 
-            pub fn from_env_with_suffix(suffix: &str) -> Self {
+            pub fn from_env_with_suffix(suffix: &str, use_defaults: bool) -> Self {
                 let suffix = Some(suffix.to_string());
                 let delimiter = #delimiter;
-                let use_zero = false; // this should be an argument
 
                 Self {
                     #(#field_initializers),*

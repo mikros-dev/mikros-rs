@@ -32,20 +32,25 @@ impl FieldAttributes {
                         match env_value {
                             Ok(v) if v.is_empty() || v == "None" => None,
                             Ok(v) => v.parse().ok(),
-                            Err(_) => if #default_value == "None" {
+                            Err(_) if use_defaults => if #default_value == "None" {
                                 None
                             } else {
                                 #default_value.parse().ok()
-                            }
+                            },
+                            Err(_) => None,
                         }
                     }
                 }
             } else {
                 quote! {
-                    #field_name: #struct_name::load_env(#env_name, &suffix, delimiter)
-                        .unwrap_or_else(|_| #default_value.to_string())
-                        .parse()
-                        .expect("failed to parse environment variable")
+                    #field_name: {
+                        let env_value = #struct_name::load_env(#env_name, &suffix, delimiter);
+                        match env_value {
+                            Ok(v) => v.parse().expect("failed to parse environment variable"),
+                            Err(_) if use_defaults => #default_value.parse().expect("failed to parse variable default value"),
+                            Err(_) => Default::default(),
+                        }
+                    }
                 }
             }
         } else {

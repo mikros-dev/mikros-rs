@@ -40,7 +40,7 @@ impl Env {
 
         // Load the same values but using the service as suffix to override the
         // previous values.
-        let svc_env = Env::from_env_with_suffix(&defs.name);
+        let svc_env = Env::from_env_with_suffix(&defs.name, false);
 
         Ok(Arc::new(env.merge(svc_env)))
     }

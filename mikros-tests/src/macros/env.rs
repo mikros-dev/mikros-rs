@@ -69,7 +69,9 @@ mod tests {
             #[env(variable = "TEST_2_LIMIT", default = "0")]
             limit: i32,
 
-            #[env(skip)]
+            #[env(variable = "TEST_2_BAR", default = "true")]
+            bar: bool,
+
             unused: bool,
         }
 
@@ -77,11 +79,12 @@ mod tests {
         std::env::set_var("TEST_2_AGE_dev", "841");
         std::env::set_var("TEST_2_LIMIT_dev", "1001");
 
-        let e = Example::from_env_with_suffix("dev");
+        let e = Example::from_env_with_suffix("dev", true);
         assert_eq!(e.name, "New Name 2");
         assert_eq!(e.age, 841);
         assert_eq!(e.limit, 1001);
         assert_eq!(e.unused, false);
+        assert_eq!(e.bar, true);
     }
 
     #[test]
@@ -97,7 +100,6 @@ mod tests {
             #[env(variable = "TEST_3_LIMIT", default = "0")]
             limit: i32,
 
-            #[env(skip)]
             unused: bool,
         }
 
