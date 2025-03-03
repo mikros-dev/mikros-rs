@@ -64,7 +64,7 @@ impl Service {
         if !builder.custom_service_types.is_empty() {
             custom_info = Some(CustomServiceInfo {
                 types: Some(builder.custom_service_types.clone()),
-            })
+            });
         }
 
         Ok(Definitions::new(args.config_path.as_deref(), custom_info)?)
@@ -100,6 +100,11 @@ impl Service {
     }
 
     /// Puts the service to run.
+    ///
+    /// # Errors
+    ///
+    /// It will return an `Err` if service definitions could not be validated
+    /// or something wrong happens during its initialization.
     pub async fn start(&mut self) -> merrors::Result<()> {
         self.logger.info("service starting");
 
@@ -232,7 +237,7 @@ impl Service {
                 // Return the service handler error for the caller.
                 return Err(err);
             }
-            _ = self.wait_finishing_signal() => {
+            () = self.wait_finishing_signal() => {
                 self.stop_service_tasks().await?;
             }
         }

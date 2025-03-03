@@ -1,0 +1,23 @@
+[package]
+name = "mikros-macros"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+readme.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.92"
+quote = "1.0.38"
+syn = "2.0.96"
+
+[dev-dependencies]
+mikros-tests = { workspace = true }

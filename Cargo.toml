@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "mikros",
+    "mikros-macros",
+    "mikros-tests",
 ]
 
 [workspace.package]
@@ -21,3 +23,6 @@ keywords = [
 categories = [
     "web-programming"
 ]
+
+[workspace.dependencies]
+mikros-tests = { path = "mikros-tests" }

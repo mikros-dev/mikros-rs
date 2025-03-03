@@ -12,23 +12,24 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-async-trait = "0.1.83"
+async-trait = "0.1.86"
 axum = "0.8.1"
-chrono = "0.4.38"
-env-settings = "0.1.11"
-env-settings-derive = "0.1.11"
-env-settings-utils = "0.1.11"
+chrono = "0.4.40"
 futures = "0.3.31"
 http = "1.2.0"
-indexmap = { version = "2.7.0", features = ["serde"]}
-prost = "0.13.4"
-serde = "1.0.217"
+indexmap = { version = "2.7.1", features = ["serde"]}
+mikros-macros = { path = "../mikros-macros" }
+prost = "0.13.5"
+serde = "1.0.218"
 serde_derive = "1.0.217"
-serde_json = "1.0.135"
+serde_json = "1.0.139"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "sync", "signal", "macros"] }
-toml = "0.8.19"
+toml = "0.8.20"
 tonic = { version = "0.12.3", features = ["transport"]}
-tower = "0.5.1"
+tower = "0.5.2"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-validator = { version = "0.19.0", features = ["derive"] }
+validator = { version = "0.20.0", features = ["derive"] }
+
+[dev-dependencies]
+mikros-tests = { workspace = true }

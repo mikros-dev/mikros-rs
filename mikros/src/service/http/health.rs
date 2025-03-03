@@ -7,5 +7,5 @@ use crate::Mutex;
 
 // The default /health handler for every application.
 pub(crate) async fn handler(State(_): State<Arc<Mutex<ServiceState>>>) -> String {
-    "".to_string()
+    String::new()
 }

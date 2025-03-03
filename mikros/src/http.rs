@@ -12,7 +12,7 @@ pub struct ServiceState {
     context: Arc<Context>,
 
     /// This member gives access to the service own state (added when it is
-    /// created, with the ServiceBuilder::http_with_state API).
+    /// created, with the `ServiceBuilder::http_with_state` API).
     ///
     /// One can retrieve the proper service state structure like the example:
     ///
