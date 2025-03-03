@@ -77,7 +77,7 @@ impl Default for StructAttributes {
     }
 }
 
-pub(crate) fn parse_fields(input: DeriveInput) -> Result<(Vec<TokenStream>, StructAttributes), String> {
+pub(crate) fn parse_fields(input: DeriveInput) -> Result<(Vec<TokenStream>, Vec<TokenStream>, StructAttributes), String> {
     let struct_name = &input.ident;
 
     // Parse struct level attributes
@@ -90,11 +90,16 @@ pub(crate) fn parse_fields(input: DeriveInput) -> Result<(Vec<TokenStream>, Stru
     };
 
     let mut field_initializers: Vec<TokenStream> = Vec::new();
+    let mut default_checks: Vec<TokenStream> = Vec::new();
+
     for field in &fields {
-        field_initializers.push(parse_field(field, struct_name)?);
+        let (initializer, check) = parse_field(field, struct_name)?;
+
+        field_initializers.push(initializer);
+        default_checks.push(check);
     }
 
-    Ok((field_initializers, attributes))
+    Ok((field_initializers, default_checks, attributes))
 }
 
 fn parse_struct_attributes(input: &DeriveInput) -> Result<StructAttributes, String> {
@@ -117,7 +122,7 @@ fn parse_struct_attributes(input: &DeriveInput) -> Result<StructAttributes, Stri
     Ok(attributes)
 }
 
-fn parse_field(field: &Field, struct_name: &Ident) -> Result<TokenStream, String> {
+fn parse_field(field: &Field, struct_name: &Ident) -> Result<(TokenStream, TokenStream), String> {
     let Some(field_name) = field.ident.as_ref() else {
         return Err("expected a field name".to_string());
     };
@@ -129,9 +134,13 @@ fn parse_field(field: &Field, struct_name: &Ident) -> Result<TokenStream, String
         }
     }
 
-    Ok(attributes
+    let default_check = generate_default_check(field_name, &attributes.default_value, &field.ty);
+    let initializer = attributes
         .into_token_stream(field_name, struct_name, &field.ty)
-        .into())
+        .into();
+
+
+    Ok((initializer, default_check))
 }
 
 fn parse_attribute(attr: &Attribute, field_name: &Ident) -> Result<FieldAttributes, String> {
@@ -168,4 +177,31 @@ fn parse_attribute(attr: &Attribute, field_name: &Ident) -> Result<FieldAttribut
         env_name,
         default_value,
     })
+}
+
+fn generate_default_check(field_name: &Ident, default_value: &Option<String>, field_type: &syn::Type) -> TokenStream {
+    let is_option = match field_type {
+        syn::Type::Path(type_path) if type_path.path.segments.len() == 1 => {
+            type_path.path.segments[0].ident == "Option"
+        }
+        _ => false,
+    };
+
+    let check = if let Some(default) = default_value {
+        if is_option {
+            if default == "None" {
+                quote! { self.#field_name.is_none() }
+            } else {
+                quote! { self.#field_name.as_ref().map(|v| v.to_string()) == Some(#default.to_string()) }
+            }
+        } else {
+            quote! { self.#field_name.to_string() == #default }
+        }
+    } else {
+        quote! { false } // No default specified
+    };
+
+    quote! {
+        (stringify!(#field_name), #check)
+    }
 }

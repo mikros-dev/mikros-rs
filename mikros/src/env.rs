@@ -37,9 +37,13 @@ impl Env {
         let mut env = Env::from_env();
         env.defined_envs = Self::load_defined_envs(defs)?;
 
+        // Get the service name in snake_case to be compatible with environment
+        // variables declaration.
+        let name = defs.name.to_snake_case();
+
         // Load the same values but using the service as suffix to override the
         // previous values.
-        let svc_env = Env::from_env_with_suffix(&defs.name, false);
+        let svc_env = Env::from_env_with_suffix(&name, false);
 
         Ok(Arc::new(env.merge(svc_env)))
     }
@@ -80,21 +84,30 @@ impl Env {
             tracker_header_name: Self::string_other(&other.tracker_header_name, &self.tracker_header_name),
             coupled_namespace: Self::string_other(&other.coupled_namespace, &self.coupled_namespace),
             coupled_port: Self::string_other(&other.coupled_port, &self.coupled_port),
-            grpc_port: other.grpc_port | self.grpc_port,
-            http_port: other.http_port | self.http_port,
+            grpc_port: Self::i32_other(other.grpc_port, self.grpc_port),
+            http_port: Self::i32_other(other.http_port, self.http_port),
             hide_response_fields: other.hide_response_fields.or(self.hide_response_fields),
             defined_envs: self.defined_envs,
         }
     }
 
     fn string_other(a: &str, b: &str) -> String {
-        println!("a:{a}, b:{b}");
-        if !a.is_empty() {
-            return a.to_string()
-        }
-
-        b.to_string()
+        if !a.is_empty() { a.to_string() } else { b.to_string() }
     }
+
+    fn i32_other(a: i32, b: i32) -> i32 {
+        if a != 0 { a } else { b }
+    }
+}
+
+#[macro_export]
+macro_rules! env_is_default {
+    ($struct:expr, $field:ident) => {{
+        let defaults = $struct.check_defaults();
+        defaults.iter().find(|&&(name, _)| name == stringify!($field))
+            .map(|&(_, is_default)| is_default)
+            .unwrap_or(false)
+    }};
 }
 
 #[cfg(test)]

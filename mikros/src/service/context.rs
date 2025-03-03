@@ -65,7 +65,7 @@ impl Context {
     /// Returns the current service name.
     #[must_use]
     pub fn service_name(&self) -> String {
-        self.definitions.name.clone()
+        self.definitions.name.to_string()
     }
 
     /// Returns the URL connection string for linking services.

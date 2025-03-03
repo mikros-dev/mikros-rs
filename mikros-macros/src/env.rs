@@ -6,7 +6,7 @@ use syn::DeriveInput;
 
 pub fn generate(input: DeriveInput) -> TokenStream {
     let struct_name = input.ident.clone();
-    let (field_initializers, attributes) = match parser::parse_fields(input) {
+    let (field_initializers, default_checks, attributes) = match parser::parse_fields(input) {
         Ok(fields) => fields,
         Err(err) => panic!("{}", err),
     };
@@ -40,6 +40,12 @@ pub fn generate(input: DeriveInput) -> TokenStream {
                 };
 
                 std::env::var(key)
+            }
+
+            pub fn check_defaults(&self) -> Vec<(&'static str, bool)> {
+                vec![
+                    #(#default_checks),*
+                ]
             }
         }
     };

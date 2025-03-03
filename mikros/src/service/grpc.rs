@@ -12,11 +12,11 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 use tonic::transport::Server;
 
-use crate::errors as merrors;
 use crate::grpc;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
 use crate::{definition, env, plugin};
+use crate::{env_is_default, errors as merrors};
 
 #[derive(Clone)]
 pub(crate) struct Grpc<S> {
@@ -110,7 +110,13 @@ where
             Ok(service_type) => {
                 self.port = match service_type.1 {
                     None => envs.grpc_port,
-                    Some(port) => port,
+                    Some(port) => {
+                        if !env_is_default!(envs, grpc_port) {
+                            envs.grpc_port
+                        } else {
+                            port
+                        }
+                    }
                 }
             }
         }

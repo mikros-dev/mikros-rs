@@ -6,7 +6,7 @@ types = ["native"]
 envs = [ "CUSTOM_ENV" ]
 
 [features.simple_api]
-enabled = false
+enabled = true
 collections = [ "name1", "name2" ]
 
 [features.another_api]
