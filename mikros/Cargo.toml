@@ -18,7 +18,7 @@ chrono = "0.4.40"
 futures = "0.3.31"
 http = "1.2.0"
 indexmap = { version = "2.7.1", features = ["serde"]}
-mikros-macros = { path = "../mikros-macros" }
+mikros-macros = { version = "0.1.0" }
 prost = "0.13.5"
 serde = "1.0.218"
 serde_derive = "1.0.217"
