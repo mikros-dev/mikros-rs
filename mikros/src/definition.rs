@@ -1,6 +1,7 @@
 pub(crate) mod errors;
 pub mod service;
 mod validation;
+mod name;
 
 use std::cmp::PartialEq;
 use std::collections::HashMap;
@@ -10,6 +11,8 @@ use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
 use validator::ValidateArgs;
+
+use crate::definition::name::ServiceName;
 
 // ServiceInfo represents the service information loaded from the 'service.toml'
 // file.
@@ -21,7 +24,7 @@ use validator::ValidateArgs;
     use_context
 ))]
 pub struct Definitions {
-    pub name: String,
+    pub name: ServiceName,
     pub version: String,
     pub language: String,
     pub product: String,

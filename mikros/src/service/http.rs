@@ -15,7 +15,7 @@ use crate::http::ServiceState;
 use crate::plugin::service::ServiceExecutionMode;
 use crate::service::context::Context;
 use crate::service::lifecycle::Lifecycle;
-use crate::{definition, env, errors as merrors, plugin};
+use crate::{definition, env, env_is_default, errors as merrors, plugin};
 
 #[derive(Clone)]
 pub(crate) struct Http {
@@ -141,7 +141,13 @@ impl plugin::service::Service for Http {
             Ok(service_type) => {
                 self.port = match service_type.1 {
                     None => envs.http_port,
-                    Some(port) => port,
+                    Some(port) => {
+                        if !env_is_default!(envs, http_port) {
+                            envs.http_port
+                        } else {
+                            port
+                        }
+                    }
                 }
             }
         }

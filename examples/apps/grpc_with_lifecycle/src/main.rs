@@ -71,7 +71,7 @@ impl lifecycle::Lifecycle for Context {
     async fn on_start(&mut self, ctx: Arc<context::Context>) -> errors::Result<()> {
         println!("grpc on_start called");
         self.value = 42;
-        self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
+        //        self.greeter = Some(link_grpc_service!(ctx, GreeterClient, "greeter"));
         Ok(())
     }
 
