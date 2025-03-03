@@ -30,3 +30,6 @@ tower = "0.5.2"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 validator = { version = "0.20.0", features = ["derive"] }
+
+[dev-dependencies]
+mikros-tests = { workspace = true }

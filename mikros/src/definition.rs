@@ -258,13 +258,7 @@ impl Definitions {
 mod tests {
     use super::*;
     use serde_derive::Deserialize;
-
-    fn assets_path() -> std::path::PathBuf {
-        let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        p.pop();
-        p.push("resources/test");
-        p
-    }
+    use mikros_tests::common::assets_path;
 
     #[test]
     fn test_load_service_file_with_invalid_settings() {

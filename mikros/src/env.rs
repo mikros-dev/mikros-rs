@@ -29,7 +29,6 @@ pub struct Env {
     #[env(variable = "MIKROS_HIDE_RESPONSE_FIELDS", default = "")]
     pub hide_response_fields: Option<String>,
 
-    #[env(skip)]
     defined_envs: HashMap<String, String>,
 }
 
@@ -102,13 +101,7 @@ impl Env {
 mod tests {
     use super::*;
     use crate::definition::Definitions;
-
-    fn assets_path() -> std::path::PathBuf {
-        let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        p.pop();
-        p.push("resources/test");
-        p
-    }
+    use mikros_tests::common::assets_path;
 
     #[test]
     fn test_load_env() {
