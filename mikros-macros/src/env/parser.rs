@@ -23,7 +23,7 @@ impl FieldAttributes {
         );
 
         let expanded = if let Some(env_name) = self.env_name {
-            let default_value = self.default_value.unwrap_or_else(|| "".to_string());
+            let default_value = self.default_value.unwrap_or_default();
 
             if is_option {
                 quote! {
