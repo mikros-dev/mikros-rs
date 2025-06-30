@@ -5,8 +5,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 use futures::lock::Mutex;
 use tokio::net::TcpListener;
 use tokio::sync::watch::Receiver;

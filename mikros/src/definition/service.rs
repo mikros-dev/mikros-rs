@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 
 use serde::de::{Deserializer, Error as SerdeError, Visitor};
-use serde::{de::IntoDeserializer, Deserialize};
+use serde::{Deserialize, de::IntoDeserializer};
 
 use crate::definition::ServiceKind;
 

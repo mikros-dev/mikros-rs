@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Debug;
 
-use tracing::field::Field;
 use tracing::Subscriber;
+use tracing::field::Field;
 
 pub(crate) struct LayerBuilder {
     local_timestamp: bool,

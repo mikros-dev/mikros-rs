@@ -1,7 +1,7 @@
 pub(crate) mod errors;
+mod name;
 pub mod service;
 mod validation;
-mod name;
 
 use std::cmp::PartialEq;
 use std::collections::HashMap;
@@ -260,8 +260,8 @@ impl Definitions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_derive::Deserialize;
     use mikros_tests::common::assets_path;
+    use serde_derive::Deserialize;
 
     #[test]
     fn test_load_service_file_with_invalid_settings() {
