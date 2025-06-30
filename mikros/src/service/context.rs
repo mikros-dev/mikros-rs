@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::definition::Definitions;
 use crate::env::Env;
 use crate::service::errors::Error;
-use crate::{errors, logger, plugin};
+use crate::{env, errors, logger, plugin};
 
 /// Context gathers all information and APIs available for services to be used
 /// when callbacks are called.
@@ -44,10 +44,14 @@ impl Context {
         &self.logger
     }
 
-    /// Allows a service to retrieve the current value of an environment
-    /// variable defined inside the service definitions file.
-    pub fn env(&self, name: &str) -> Option<&String> {
-        self.envs.get_defined_env(name)
+    /// Gives the service access to the service environments.
+    pub fn env(&self) -> Arc<env::Env> {
+        self.envs.clone()
+    }
+
+    /// Gives the service access to a reference to the service environments.
+    pub fn env_ref(&self) -> &env::Env {
+        &self.envs
     }
 
     /// Gives the service access to the service definitions loaded from the
@@ -132,7 +136,7 @@ impl Context {
     }
 }
 
-// TODO: Implement error here
+// TODO: Handle unwrap error here to return a proper tonic RPC error
 /// Retrieves the mikros Context from an RPC request argument.
 pub fn from_request<B>(request: &tonic::Request<B>) -> Arc<Context>
 where
@@ -152,7 +156,7 @@ macro_rules! link_grpc_service {
                 return Err(mikros::errors::ServiceError::custom(
                     $context,
                     &e.to_string(),
-                ))
+                ));
             }
         }
     }};
