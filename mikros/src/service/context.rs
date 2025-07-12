@@ -136,13 +136,15 @@ impl Context {
     }
 }
 
-// TODO: Handle unwrap error here to return a proper tonic RPC error
 /// Retrieves the mikros Context from an RPC request argument.
-pub fn from_request<B>(request: &tonic::Request<B>) -> Arc<Context>
+pub fn from_request<B>(request: &tonic::Request<B>) -> Result<Arc<Context>, tonic::Status>
 where
     B: prost::Message,
 {
-    request.extensions().get::<Arc<Context>>().unwrap().clone()
+    match request.extensions().get::<Arc<Context>>() {
+        None => Err(tonic::Status::internal("could not retrieve context")),
+        Some(context) => Ok(context.clone()),
+    }
 }
 
 /// A macro to help service coupling using gRPC connections.
