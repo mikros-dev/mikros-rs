@@ -230,10 +230,7 @@ impl Definitions {
         T: DeserializeOwned,
     {
         if let Some(d) = data {
-            return match serde_json::from_value::<T>(d.clone()) {
-                Ok(defs) => Some(defs),
-                Err(_) => None,
-            };
+            return serde_json::from_value::<T>(d.clone()).ok()
         }
 
         None
@@ -249,10 +246,7 @@ impl Definitions {
     {
         match &self.service {
             None => None,
-            Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
-                Err(_) => None,
-                Ok(settings) => Some(settings),
-            },
+            Some(settings) => serde_json::from_value::<T>(settings.clone()).ok()
         }
     }
 }
