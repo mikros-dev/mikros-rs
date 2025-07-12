@@ -12,9 +12,9 @@ use crate::{definition, env, errors, plugin};
 #[async_trait::async_trait]
 pub trait NativeService: NativeServiceClone + Lifecycle + Send + Sync {
     /// This is the place where the service/application must be initialized. It
-    /// should do the required initialization, put any job to execute in background
-    /// and leave. It shouldn't block.
-    async fn start(&self, ctx: Arc<Context>) -> errors::Result<()>;
+    /// should do the required initialization, put jobs to execute in the
+    /// background and finish. It shouldn't block.
+    async fn start(&mut self, ctx: Arc<Context>) -> errors::Result<()>;
 
     /// The stop callback is called when the service/application is requested
     /// to finish. It must be responsible for finishing any previously started
@@ -91,7 +91,7 @@ impl plugin::service::Service for Native {
         Ok(())
     }
 
-    async fn run(&self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
+    async fn run(&mut self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
         self.svc.lock().await.start(ctx).await
     }
 

@@ -160,7 +160,7 @@ impl plugin::service::Service for Http {
         Ok(())
     }
 
-    async fn run(&self, ctx: Arc<Context>, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
+    async fn run(&mut self, ctx: Arc<Context>, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();

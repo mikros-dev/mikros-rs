@@ -136,7 +136,7 @@ where
     }
 
     async fn run(
-        &self,
+        &mut self,
         ctx: Arc<Context>,
         shutdown_rx: watch::Receiver<()>,
     ) -> merrors::Result<()> {

@@ -189,7 +189,7 @@ impl Service {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
         for s in &definitions.types {
-            let svc = self.get_server(&s.0)?.clone();
+            let mut svc = self.get_server(&s.0)?.clone();
             let context = context.clone();
             let mut shutdown_rx = shutdown_tx.subscribe();
             let tx = tx.clone();
