@@ -23,9 +23,6 @@ pub trait Service: ServiceClone + Lifecycle {
     fn mode(&self) -> ServiceExecutionMode;
 
     /// Initializes everything that the service implementation needs to run.
-    ///
-    /// Here is the only place where values can be stored inside the implementation
-    /// for later usage.
     fn initialize(
         &mut self,
         ctx: Arc<Context>,
@@ -35,7 +32,7 @@ pub trait Service: ServiceClone + Lifecycle {
     ) -> errors::Result<()>;
 
     /// Puts the service implementation to run.
-    async fn run(&self, ctx: Arc<Context>, shutdown_rx: watch::Receiver<()>) -> errors::Result<()>;
+    async fn run(&mut self, ctx: Arc<Context>, shutdown_rx: watch::Receiver<()>) -> errors::Result<()>;
 
     /// Stops the current service implementation. The place to let the service
     /// execute its graceful shutdown.

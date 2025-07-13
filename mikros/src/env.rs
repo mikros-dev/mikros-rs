@@ -1,8 +1,8 @@
 mod errors;
 
-use std::sync::Arc;
-use std::collections::HashMap;
 use mikros_macros::Env;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::definition::Definitions;
 
@@ -48,9 +48,7 @@ impl Env {
         Ok(Arc::new(env.merge(svc_env)))
     }
 
-    fn load_defined_envs(
-        defs: &Definitions,
-    ) -> Result<HashMap<String, String>, errors::Error> {
+    fn load_defined_envs(defs: &Definitions) -> Result<HashMap<String, String>, errors::Error> {
         let mut envs = HashMap::new();
 
         if let Some(defined_envs) = &defs.envs {
@@ -68,21 +66,27 @@ impl Env {
         Ok(envs)
     }
 
-    pub fn get_defined_env(&self, name: &str) -> Option<&String> {
-        self.defined_envs.get(name)
+    pub fn get(&self, name: &str) -> Option<String> {
+        self.defined_envs.get(name).cloned()
     }
 
-    pub fn response_fields(&self) -> Option<Vec<String>> {
+    pub(crate) fn response_fields(&self) -> Option<Vec<String>> {
         self.hide_response_fields
             .as_ref()
             .map(|fields| fields.split(',').map(String::from).collect())
     }
 
     fn merge(self, other: Env) -> Self {
-        Self{
+        Self {
             deployment_env: Self::string_other(&other.deployment_env, &self.deployment_env),
-            tracker_header_name: Self::string_other(&other.tracker_header_name, &self.tracker_header_name),
-            coupled_namespace: Self::string_other(&other.coupled_namespace, &self.coupled_namespace),
+            tracker_header_name: Self::string_other(
+                &other.tracker_header_name,
+                &self.tracker_header_name,
+            ),
+            coupled_namespace: Self::string_other(
+                &other.coupled_namespace,
+                &self.coupled_namespace,
+            ),
             coupled_port: Self::string_other(&other.coupled_port, &self.coupled_port),
             grpc_port: Self::i32_other(other.grpc_port, self.grpc_port),
             http_port: Self::i32_other(other.http_port, self.http_port),
@@ -92,7 +96,11 @@ impl Env {
     }
 
     fn string_other(a: &str, b: &str) -> String {
-        if !a.is_empty() { a.to_string() } else { b.to_string() }
+        if !a.is_empty() {
+            a.to_string()
+        } else {
+            b.to_string()
+        }
     }
 
     fn i32_other(a: i32, b: i32) -> i32 {
@@ -104,7 +112,9 @@ impl Env {
 macro_rules! env_is_default {
     ($struct:expr, $field:ident) => {{
         let defaults = $struct.check_defaults();
-        defaults.iter().find(|&&(name, _)| name == stringify!($field))
+        defaults
+            .iter()
+            .find(|&&(name, _)| name == stringify!($field))
             .map(|&(_, is_default)| is_default)
             .unwrap_or(false)
     }};
@@ -118,7 +128,9 @@ mod tests {
 
     #[test]
     fn test_load_env() {
-        std::env::set_var("MIKROS_COUPLED_NAMESPACE", "127.0.0.1".to_string());
+        unsafe {
+            std::env::set_var("MIKROS_COUPLED_NAMESPACE", "127.0.0.1".to_string());
+        }
         let filename = assets_path().join("definitions/service.toml.ok");
         let defs = Definitions::new(filename.to_str(), None).unwrap();
         let e = Env::load(&defs).unwrap();

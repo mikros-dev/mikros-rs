@@ -5,9 +5,9 @@ use std::str::FromStr;
 
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{
+    EnvFilter, Registry,
     layer::{Layered, SubscriberExt},
     reload::Handle,
-    EnvFilter, Registry,
 };
 
 use crate::logger::builder::LoggerBuilder;

@@ -174,7 +174,7 @@ impl ServiceError {
     }
 
     fn serialize(&self) -> String {
-        serde_json::to_string(self).unwrap_or("could not serialize error message".to_string())
+        serde_json::to_string(self).unwrap_or("could not serialize the error message".to_string())
     }
 
     // Just a helper test function to add fields that should be hidden when

@@ -5,8 +5,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 use futures::lock::Mutex;
 use tokio::net::TcpListener;
 use tokio::sync::watch::Receiver;
@@ -160,7 +160,7 @@ impl plugin::service::Service for Http {
         Ok(())
     }
 
-    async fn run(&self, ctx: Arc<Context>, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
+    async fn run(&mut self, ctx: Arc<Context>, shutdown_rx: Receiver<()>) -> merrors::Result<()> {
         let addr = format!("0.0.0.0:{}", self.port);
         let shutdown_signal = async move {
             let mut shutdown_rx = shutdown_rx.clone();

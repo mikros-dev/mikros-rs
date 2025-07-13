@@ -1,7 +1,7 @@
 pub(crate) mod errors;
+mod name;
 pub mod service;
 mod validation;
-mod name;
 
 use std::cmp::PartialEq;
 use std::collections::HashMap;
@@ -230,10 +230,7 @@ impl Definitions {
         T: DeserializeOwned,
     {
         if let Some(d) = data {
-            return match serde_json::from_value::<T>(d.clone()) {
-                Ok(defs) => Some(defs),
-                Err(_) => None,
-            };
+            return serde_json::from_value::<T>(d.clone()).ok()
         }
 
         None
@@ -249,10 +246,7 @@ impl Definitions {
     {
         match &self.service {
             None => None,
-            Some(settings) => match serde_json::from_value::<T>(settings.clone()) {
-                Err(_) => None,
-                Ok(settings) => Some(settings),
-            },
+            Some(settings) => serde_json::from_value::<T>(settings.clone()).ok()
         }
     }
 }
@@ -260,8 +254,8 @@ impl Definitions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_derive::Deserialize;
     use mikros_tests::common::assets_path;
+    use serde_derive::Deserialize;
 
     #[test]
     fn test_load_service_file_with_invalid_settings() {

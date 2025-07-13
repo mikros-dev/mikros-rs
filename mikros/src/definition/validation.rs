@@ -1,4 +1,4 @@
-use crate::definition::{service, CustomServiceInfo, Definitions};
+use crate::definition::{CustomServiceInfo, Definitions, service};
 
 pub(crate) fn validate_service_info(
     info: &Definitions,
@@ -51,23 +51,29 @@ mod tests {
 
     #[test]
     fn test_validate_service_type() {
-        assert!(validate_service_type(
-            &service::Service(ServiceKind::Custom("".to_string()), None),
-            &CustomServiceInfo::default()
-        )
-        .is_err());
+        assert!(
+            validate_service_type(
+                &service::Service(ServiceKind::Custom("".to_string()), None),
+                &CustomServiceInfo::default()
+            )
+            .is_err()
+        );
 
-        assert!(validate_service_type(
-            &service::Service(ServiceKind::Custom("cronjob".to_string()), None),
-            &CustomServiceInfo::default()
-        )
-        .is_err());
+        assert!(
+            validate_service_type(
+                &service::Service(ServiceKind::Custom("cronjob".to_string()), None),
+                &CustomServiceInfo::default()
+            )
+            .is_err()
+        );
 
-        assert!(validate_service_type(
-            &service::Service(ServiceKind::Custom("grpc".to_string()), None),
-            &CustomServiceInfo::default()
-        )
-        .is_ok());
+        assert!(
+            validate_service_type(
+                &service::Service(ServiceKind::Custom("grpc".to_string()), None),
+                &CustomServiceInfo::default()
+            )
+            .is_ok()
+        );
     }
 
     #[test]

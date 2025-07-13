@@ -11,7 +11,7 @@ use crate::{definition, env, errors, plugin};
 
 #[async_trait::async_trait]
 pub trait ScriptService: ScriptServiceClone + Lifecycle + Send {
-    async fn run(&self, ctx: Arc<Context>) -> errors::Result<()>;
+    async fn run(&mut self, ctx: Arc<Context>) -> errors::Result<()>;
     async fn cleanup(&self, ctx: Arc<Context>);
 }
 
@@ -84,7 +84,7 @@ impl plugin::service::Service for Script {
         Ok(())
     }
 
-    async fn run(&self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
+    async fn run(&mut self, ctx: Arc<Context>, _: watch::Receiver<()>) -> errors::Result<()> {
         self.svc.lock().await.run(ctx).await
     }
 

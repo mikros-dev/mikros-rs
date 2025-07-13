@@ -10,13 +10,13 @@ use tonic::body::BoxBody;
 use tonic::server::NamedService;
 
 use crate::http::ServiceState;
+use crate::service::Service;
 use crate::service::errors::Error;
 use crate::service::grpc::Grpc;
 use crate::service::http::Http;
 use crate::service::lifecycle::Lifecycle;
 use crate::service::native::{Native, NativeService};
 use crate::service::script::{Script, ScriptService};
-use crate::service::Service;
 use crate::{definition, errors, plugin};
 
 /// The builder API to build a mikros service instance. It allows to initialize
