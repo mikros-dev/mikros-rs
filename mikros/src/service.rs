@@ -173,7 +173,9 @@ impl Service {
         let mut info: HashMap<String, serde_json::Value> = HashMap::new();
 
         for feature in self.context.features.lock().await.iter() {
-            info.insert(feature.name().to_string(), feature.info());
+            if let Some(feature_info) = feature.info() {
+                info.insert(feature.name().to_string(), feature_info);
+            }
         }
 
         self.logger.infof(

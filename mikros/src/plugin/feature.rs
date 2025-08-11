@@ -52,7 +52,7 @@ pub trait Feature: Send + FeatureClone + std::any::Any {
 
     /// Returns internal information about the feature to be logged when the service
     /// is being initialized.
-    fn info(&self) -> serde_json::Value;
+    fn info(&self) -> Option<serde_json::Value>;
 
     /// Returns if the feature is currently enabled or not.
     fn is_enabled(&self) -> bool;
