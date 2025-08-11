@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use core::{future::Future, pin::Pin};
+
 use crate::definition::Definitions;
 use crate::env::Env;
 use crate::errors;
@@ -94,6 +96,8 @@ impl Clone for Box<dyn Feature> {
     }
 }
 
+pub type BoxResultFuture<'a, T> = Pin<Box<dyn Future<Output = errors::Result<T>> + Send + 'a>>;
+
 /// This macro adds APIs to the feature allowing it to be used by services
 /// in an easy way.
 ///
@@ -106,23 +110,39 @@ macro_rules! impl_feature_public_api {
             Box::new($api_struct::default())
         }
 
-        pub async fn execute_on<F>(ctx: Arc<Context>, f: F) -> mikros::errors::Result<()>
+        pub async fn execute_on<F, T>(ctx: Arc<Context>, f: F) -> mikros::errors::Result<T>
         where
-            F: FnOnce(&dyn $api_trait) -> mikros::errors::Result<()>,
+            F: for<'a> FnOnce(&'a dyn $api_trait) -> mikros::plugin::feature::BoxResultFuture<'a, T>,
         {
             let feature = ctx.feature($feature_name).await?;
+
             if let Some(api) = to_api(&feature) {
-                f(api)?;
+                return f(api).await;
             }
 
-            Ok(())
+            Err(mikros::errors::ServiceError::internal(ctx, &format!("feature {} not found", $feature_name)))
         }
 
-        fn to_api(feature: &Box<dyn plugin::feature::Feature>) -> Option<&dyn $api_trait> {
+        fn to_api(feature: &Box<dyn mikros::plugin::feature::Feature>) -> Option<&dyn $api_trait> {
             feature
                 .service_api()?
                 .downcast_ref::<$api_struct>()
                 .map(|s| s as &dyn $api_trait)
         }
+    };
+}
+
+/// Boxes an async future with `Output = errors::Result<()>` and ties it to lifetime `'a`.
+pub fn box_result<'a, F, T>(fut: F) -> BoxResultFuture<'a, T>
+where
+    F: Future<Output = errors::Result<T>> + Send + 'a,
+{
+    Box::pin(fut)
+}
+
+#[macro_export]
+macro_rules! feature_async {
+    ($e:expr) => {
+        mikros::plugin::feature::box_result(async move { $e })
     };
 }
