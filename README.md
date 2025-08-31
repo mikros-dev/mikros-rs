@@ -1,14 +1,28 @@
-![status](resources/badges/status.svg)
-![coverage](resources/badges/coverage.svg)
-![license](resources/badges/license.svg)
-
 # mikros-rs
 
-## About
+<p align="center">
+  <a href="https://mikros.dev">
+    <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/.assets/images/rust-logo.png" alt="mikros logo" width="650"/>
+  </a>
+</p>
 
-`mikros` is rust framework for creating applications.
+<h3 align="center">mikros is a rust framework for creating applications.</h3>
 
-### Introduction
+<p align="center">
+  <a href="https://docs.rs/mikros">
+    <img src="https://docs.rs/mikros/badge.svg" alt="docs.rs" />
+  </a>
+  <a href="https://mikros.dev">
+    <img src="https://img.shields.io/badge/site-mikros.dev-blue" alt="official site" />
+  </a>
+  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/status.svg" alt="status" />
+  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/coverage.svg" alt="coverage" />
+  <a href="https://github.com/mikros-dev/mikros-rs/blob/main/LICENSE">
+    <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/license.svg" alt="license" />
+  </a>
+</p>
+
+## Introduction
 
 Mikros is an opinionated framework aiming to ease and standardize the creation
 of applications. It supports creating applications that need to run for long
@@ -23,12 +37,12 @@ Currently, it has support for the following kind of applications:
 * [native](docs/mikros/service_native.md): a general-purpose application, without a defined API, with the ability to execute any code for long periods
 * [script](docs/mikros/service_script.md): also a general-purpose application, without a defined API, but that only needs to execute a single function and stop.
 
-### Documentation
+## Documentation
 
 A more detailed documentation about the framework API and its features can be
 accessed at the [docs](docs/mikros/mikros.md) directory.
 
-### Service
+## Service
 
 Service, here, is considered an application that may or may not remain running
 indefinitely, performing some type of task or waiting for commands to activate it.
@@ -44,7 +58,7 @@ Building a service using the framework's SDK must adhere to the following points
 * Initialize the SDK correctly;
 * Have a configuration file, called `service.toml`, containing information about itself and its functionalities.
 
-### Example of a service
+## Example of a service
 
 The following example demonstrates how to create a service of a `script`
 type. The `Service` structure implements the trait [ScriptService](mikros/src/service/script.rs)
