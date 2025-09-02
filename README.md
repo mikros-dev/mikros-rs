@@ -15,10 +15,10 @@
   <a href="https://mikros.dev">
     <img src="https://img.shields.io/badge/site-mikros.dev-blue" alt="official site" />
   </a>
-  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/status.svg" alt="status" />
-  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/coverage.svg" alt="coverage" />
+  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/.assets/images/badges/status.svg" alt="status" />
+  <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/.assets/images/badges/coverage.svg" alt="coverage" />
   <a href="https://github.com/mikros-dev/mikros-rs/blob/main/LICENSE">
-    <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/resources/badges/license.svg" alt="license" />
+    <img src="https://raw.githubusercontent.com/mikros-dev/mikros-rs/main/.assets/images/badges/license.svg" alt="license" />
   </a>
 </p>
 
